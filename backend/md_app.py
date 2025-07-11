@@ -8,7 +8,7 @@
 """
 # app.py 完整修改版本
 
-from flask import Blueprint, render_template, request, jsonify, send_file
+from flask import Blueprint, render_template, request, jsonify
 import sqlite3
 from flask_cors import CORS
 from backend.services.file_service import get_files, add_file, get_file_content, update_file, delete_file, init_file_db
