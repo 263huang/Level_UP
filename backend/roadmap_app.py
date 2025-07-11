@@ -6,10 +6,10 @@
     - Roadmap节点搜索接口
     - Roadmap节点列表接口
 """
-from flask import Flask, Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 import sqlite3
 from backend.services.roadmap_service import (
-    get_roadmap, add_main_node, add_branch_node,
+    get_roadmap, add_branch_node,
     update_main_node, update_branch_node, delete_main_node, delete_branch_node,
     search_roadmap_nodes  # 新增
 )
@@ -35,12 +35,11 @@ def api_add_main_node():
     返回：操作结果
     """
     data = request.get_json()
-    user_id = data.get('user_id')
     title = data.get('title')
     target_id = data.get('target_id', 'testtarget')
     insert_after_id = data.get('insert_after_id')  # 新增
-    if not user_id or not title or not target_id:
-        return jsonify({'success': False, 'error': 'user_id、技能点标题和目标ID不能为空'})
+    if not title or not target_id:
+        return jsonify({'success': False, 'error': '技能点标题和目标ID不能为空'})
     from backend.services.roadmap_service import add_main_node_at
     add_main_node_at(user_id, target_id, title, insert_after_id)
     return jsonify({'success': True})

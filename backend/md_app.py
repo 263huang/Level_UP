@@ -10,9 +10,6 @@
 
 from flask import Blueprint, render_template, request, jsonify, send_file
 import sqlite3
-import os
-from datetime import datetime
-from contextlib import closing
 from flask_cors import CORS
 from backend.services.file_service import get_files, add_file, get_file_content, update_file, delete_file, init_file_db
 from backend.services.roadmap_service import get_roadmap_progress
