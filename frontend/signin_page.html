@@ -1,0 +1,323 @@
+<!--
+  文件名：signin_page.html
+  作用：LevelUP 登录/注册页面，提供用户认证入口
+  主要功能：
+    - 用户登录
+    - 用户注册
+    - 登录注册切换
+    - 登录态检测与跳转
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>LevelUP - 登录/注册</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 引入 Google Fonts - Roboto 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --main-bg: #fff;
+            --main-text: #222;
+            --main-purple: #6b4eff;
+            --main-blue: #9cd6ff;
+            --main-border: #e6eaf0;
+            --main-gray: #888;
+        }
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, var(--main-purple) 0%, var(--main-blue) 100%);
+            color: var(--main-text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            background-color: var(--main-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(107, 78, 255, 0.12);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-form-title {
+            font-size: 2.2em;
+            color: var(--main-purple);
+            margin-bottom: 30px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .login-form .form-group,
+        .register-form .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            width: 100%;
+        }
+        .login-form .form-group label,
+        .register-form .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--main-text);
+        }
+        .login-form .form-group input,
+        .register-form .form-group input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            border: 1.5px solid var(--main-border);
+            border-radius: 8px;
+            font-size: 1.1em;
+            background: #f8fafc;
+            color: var(--main-text);
+        }
+        .login-form .form-actions,
+        .register-form .form-actions {
+            margin-top: 30px;
+            width: 100%;
+        }
+        .login-form .form-actions .btn,
+        .register-form .form-actions .btn {
+            width: 100%;
+            padding: 14px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--main-purple);
+            color: var(--main-bg);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .login-form .form-actions .btn:hover,
+        .register-form .form-actions .btn:hover {
+            background-color: var(--main-blue);
+            color: var(--main-purple);
+        }
+        .auth-toggle-link {
+            font-size: 1em;
+            color: var(--main-purple);
+            cursor: pointer;
+            margin-top: 15px;
+            display: block;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .auth-toggle-link:hover {
+            color: var(--main-blue);
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 0.98em;
+        }
+        @media (max-width: 600px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px;
+            }
+            .login-form-title {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="login-container">
+            <!-- 登录/注册标题 -->
+            <h3 class="login-form-title">{{ isLogin ? '登录 LevelUP' : '注册新账号' }}</h3>
+            <!-- 登录表单 -->
+            <div class="login-form" v-if="isLogin">
+                <!-- 用户名输入框 -->
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" v-model="username" @keyup.enter="handleSubmit" placeholder="请输入用户名">
+                </div>
+                <!-- 密码输入框 -->
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" v-model="password" @keyup.enter="handleSubmit" placeholder="请输入密码">
+                </div>
+                <div class="form-actions">
+                    <button class="btn" @click="handleSubmit">登录</button>
+                </div>
+                <!-- 切换到注册 -->
+                <a href="#" class="auth-toggle-link" @click.prevent="switchMode">没有账号？立即注册</a>
+                <div v-if="showError" class="error-message">{{ errorMessage }}</div>
+            </div>
+
+            <!-- 注册表单 -->
+            <div class="register-form" v-else>
+                <!-- 用户名输入框 -->
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" v-model="username" @keyup.enter="handleSubmit" placeholder="请输入用户名">
+                </div>
+                <!-- 密码输入框 -->
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" v-model="password" @keyup.enter="handleSubmit" placeholder="请输入密码">
+                </div>
+                <!-- 确认密码输入框 -->
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码:</label>
+                    <input type="password" id="confirmPassword" v-model="confirmPassword" @keyup.enter="handleSubmit" placeholder="请再次输入密码">
+                </div>
+                <div class="form-actions">
+                    <button class="btn" @click="handleSubmit">注册</button>
+                </div>
+                <!-- 切换到登录 -->
+                <a href="#" class="auth-toggle-link" @click.prevent="switchMode">已有账号？去登录</a>
+                <div v-if="showError" class="error-message">{{ errorMessage }}</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 登录/注册页面主Vue应用
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    isLogin: true, // 当前是否为登录模式
+                    username: '',
+                    password: '',
+                    confirmPassword: '',
+                    errorMessage: '',
+                    showError: false
+                }
+            },
+            mounted() {
+                // 检查本地登录态，自动跳转主页面
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (currentUser) {
+                    // 检查后端 session 是否有效
+                    fetch('http://localhost:5000/check_login', { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                // session 有效，跳转主页面
+                                window.location.href = 'main_web.html';
+                            } else {
+                                // session 失效，清除 localStorage
+                                localStorage.removeItem('currentUser');
+                            }
+                        });
+                }
+            },
+            methods: {
+                /**
+                 * 切换登录/注册模式
+                 */
+                switchMode() {
+                    this.isLogin = !this.isLogin;
+                    this.username = '';
+                    this.password = '';
+                    this.confirmPassword = '';
+                    this.errorMessage = '';
+                    this.showError = false;
+                },
+                /**
+                 * 登录或注册提交处理
+                 */
+                async handleSubmit() {
+                    // 清除之前的错误信息
+                    this.errorMessage = '';
+                    this.showError = false;
+
+                    // 验证输入
+                    if (!this.username.trim() || !this.password.trim()) {
+                        this.errorMessage = '用户名和密码不能为空！';
+                        this.showError = true;
+                        return;
+                    }
+
+                    if (!this.isLogin && this.password !== this.confirmPassword) {
+                        this.errorMessage = '两次输入的密码不一致！';
+                        this.showError = true;
+                        return;
+                    }
+
+                    try {
+                        if (this.isLogin) {
+                            // 登录逻辑：请求后端API
+                            const res = await fetch('http://localhost:5000/login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    username: this.username,
+                                    password: this.password
+                                })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                // 登录成功，保存用户信息
+                                localStorage.setItem('currentUser', JSON.stringify({
+                                    username: this.username
+                                }));
+                                window.location.href = 'main_web.html';
+                            } else {
+                                this.errorMessage = data.error || '登录失败！';
+                                this.showError = true;
+                            }
+                        } else {
+                            // 注册逻辑：请求后端API
+                            const res = await fetch('http://localhost:5000/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    username: this.username,
+                                    password: this.password
+                                })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                // 注册成功后自动登录
+                                const loginRes = await fetch('http://localhost:5000/login', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                        username: this.username,
+                                        password: this.password
+                                    })
+                                });
+                                const loginData = await loginRes.json();
+                                if (loginData.success) {
+                                    localStorage.setItem('currentUser', JSON.stringify({
+                                        username: this.username
+                                    }));
+                                    window.location.href = 'main_web.html';
+                                } else {
+                                    this.errorMessage = loginData.error || '自动登录失败，请手动登录';
+                                    this.showError = true;
+                                }
+                            } else {
+                                this.errorMessage = data.error || '注册失败！';
+                                this.showError = true;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('操作失败:', error);
+                        this.errorMessage = '操作失败，请稍后重试！';
+                        this.showError = true;
+                    }
+                }
+            }
+        }).mount("#app");
+    </script>
+</body>
+</html>

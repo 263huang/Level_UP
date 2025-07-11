@@ -1,0 +1,97 @@
+/* 基础样式 */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f5f5f5;
+    color: #222;
+}
+
+/* 标题样式 */
+h1, h2, h3 {
+    color: #2c3e50;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+/* 链接样式 */
+a {
+    color: #3498db;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* 按钮样式 */
+button, .btn {
+    background: #3498db;
+    color: #fff;
+    border: none;
+    padding: 0.5em 1.2em;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.2s;
+}
+button:hover, .btn:hover {
+    background: #217dbb;
+}
+
+/* 表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    background: #fff;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 0.75em;
+    text-align: left;
+}
+th {
+    background: #f0f0f0;
+}
+
+/* 表单样式 */
+input, select, textarea {
+    padding: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 1em;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+}
+label {
+    display: block;
+    margin-bottom: 0.3em;
+    font-weight: bold;
+}
+
+/* 容器样式 */
+.container {
+    max-width: 900px;
+    margin: 2em auto;
+    background: #fff;
+    padding: 2em;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* 列表样式 */
+ul, ol {
+    margin-left: 2em;
+    margin-bottom: 1em;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+    .container {
+        padding: 1em;
+    }
+    table, th, td {
+        font-size: 0.95em;
+    }
+}

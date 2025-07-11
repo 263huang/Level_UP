@@ -1,0 +1,764 @@
+<!--
+  文件名：index_md.html
+  作用：LevelUP 笔记编辑器页面，支持md文件的增删改查和内容编辑
+  作者：XXX
+  日期：2024-06-XX
+  主要功能：
+    - md文件列表展示与搜索
+    - md文件内容编辑与保存
+    - 文件新建、删除、导入、导出
+    - 关联roadmap节点
+    - 状态指示与通知
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>LevelUP notes</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入 Toast UI Editor -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6b4eff',
+                        secondary: '#52c41a',
+                        danger: '#F53F3F',
+                        warning: '#FF7D00',
+                        info: '#86909C',
+                        light: '#F2F3F5',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .status-indicator {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                margin-right: 5px;
+            }
+            .status-saved {
+                background-color: #00B42A;
+            }
+            .status-unsaved {
+                background-color: #F53F3F;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-dark">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm py-3 px-4 flex items-center justify-between">
+        <!-- 左侧返回按钮与Logo -->
+        <div class="flex items-center space-x-2">
+            <button id="back-to-roadmap" class="mr-2 text-primary hover:text-blue-700" title="返回Roadmap" style="background:none;border:none;outline:none;cursor:pointer;font-size:1.5em;">
+                <i class="fa fa-arrow-left"></i>
+            </button>
+            <i class="fa fa-markdown text-primary text-2xl"></i>
+        </div>
+        <!-- 右侧操作按钮区 -->
+        <div class="flex items-center space-x-4">
+            <button id="new-file-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center transition-all duration-200 transform hover:scale-105">
+                <i class="fa fa-file-o mr-2"></i> 新建文件
+            </button>
+            <button id="save-btn" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-md flex items-center transition-all duration-200 transform hover:scale-105">
+                <i class="fa fa-save mr-2"></i> 保存
+            </button>
+            <button id="delete-btn" class="bg-red-500 hover:bg-red/90 text-white px-4 py-2 rounded-md flex items-center transition-all duration-200 transform hover:scale-105">
+                <i class="fa fa-trash mr-2"></i> 删除
+            </button>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <div class="flex h-[calc(100vh-64px)]">
+        <!-- 左侧文件目录栏 -->
+        <div class="w-64 bg-white border-r border-gray-200">
+            <div class="p-3 border-b border-gray-200">
+                <div class="relative">
+                    <input type="text" id="search-files" placeholder="搜索文件..." class="w-full pl-9 pr-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            <div id="file-list" class="p-3 space-y-1 scrollbar-hide max-h-full overflow-y-auto">
+                <!-- 文件列表将通过JavaScript动态生成 -->
+                <div class="text-center text-gray-400 py-10">
+                    <i class="fa fa-folder-open-o text-3xl mb-2"></i>
+                    <p>暂无文件，点击"新建文件"创建</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧编辑区 -->
+        <div class="flex-1 p-4 bg-gray-50">
+            <!-- 文件标题与状态指示 -->
+            <div class="mb-3 flex items-center">
+                <input type="text" id="file-title" placeholder="未命名.md" class="w-full text-2xl font-semibold bg-transparent border-b-2 border-gray-300 focus:outline-none focus:border-primary">
+                <span id="file-status" class="ml-3 text-sm text-gray-500">
+                    <span class="status-indicator status-saved"></span>
+                    <span>已保存</span>
+                </span>
+            </div>
+            <!-- 编辑器容器 -->
+            <div id="editor-container" class="editor-container rounded-lg shadow-md overflow-hidden border border-gray-300 h-[calc(100%-56px)]"></div>
+        </div>
+    </div>
+
+    <!-- 通知提示框 -->
+    <div id="notification" class="fixed top-4 right-4 max-w-md bg-white shadow-lg rounded-lg p-4 z-50 transform translate-x-full transition-transform duration-300">
+        <div class="flex items-start">
+            <div id="notification-icon" class="mr-3 mt-0.5"></div>
+            <div class="flex-1">
+                <h3 id="notification-title" class="font-semibold text-lg"></h3>
+                <p id="notification-message" class="text-gray-600 mt-1"></p>
+            </div>
+            <button id="close-notification" class="ml-3 text-gray-400 hover:text-gray-600">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 调试信息面板 -->
+    <div id="debug-panel" class="fixed bottom-2 left-0 right-50 bg-gray-800 text-white p-2 text-xs opacity-75">
+        <div class="flex space-x-4">
+            <div>当前文件ID: <span id="debug-file-id">null</span></div>
+            <div>内容长度: <span id="debug-content-length">0</span></div>
+            <div>上次操作: <span id="debug-last-action">无</span></div>
+        </div>
+    </div>
+
+    <script>
+        // =================== LevelUP 笔记编辑器主逻辑 ===================
+        // 主要功能：文件列表、内容编辑、保存、删除、导入导出、状态指示
+        // 初始化编辑器
+        const editor = new toastui.Editor({
+            el: document.getElementById("editor-container"),
+            initialValue: `# 欢迎使用 LevelUP
+
+## 请开始编写你的笔记吧！
+
+在这里记录你的学习内容、想法和计划...
+---
+*开始你的学习之旅吧！*`,
+            height: "100%",
+            previewStyle: "vertical"
+        });
+
+        // 当前编辑的文件ID，用于更新操作
+        let currentFileId = null;
+        // 当前文件是否已保存
+        let isSaved = true;
+        // 最后保存时间
+        let lastSaveTime = null;
+        // 原始文件列表数据
+        let allFiles = [];
+        // 初始内容，用于精确检测变化
+        let initialContent = editor.getMarkdown();
+        // 防止重复初始化的标志
+        let isInitializing = false;
+
+        // 从 sessionStorage 读取参数
+        const userId = sessionStorage.getItem('md_user_id');
+        const targetId = sessionStorage.getItem('md_target_id');
+        const mainId = sessionStorage.getItem('md_main_id');
+        const branchId = sessionStorage.getItem('md_branch_id');
+        const type = sessionStorage.getItem('md_type');
+        // 组装tags对象
+        let tagsObj = { userId, targetId, mainId };
+        if (type === 'branch' && branchId) tagsObj.branchId = branchId;
+        // 文件筛选函数：主节点页面只显示所有分支节点的md文件
+        function fileTagMatch(file) {
+            try {
+                if (!file.tags) return false;
+                const t = JSON.parse(file.tags);
+                if (t.userId !== userId || t.targetId !== targetId || t.mainId !== mainId) return false;
+                if (type === 'branch') return t.branchId === branchId;
+                if (type === 'main') return !!t.branchId; // 只显示有分支id的文件
+                return true;
+            } catch { return false; }
+        }
+
+        // 自动关联roadmap节点的md文件
+        async function autoOpenOrCreateNodeFile() {
+            if (!userId || !targetId || !mainId || isInitializing) return;
+            isInitializing = true;
+            console.log("autoOpenOrCreateNodeFile 开始执行", { type, targetId, branchId, mainId });
+            
+            try {
+                if (type === 'main') {
+                    console.log("主节点模式，只加载文件列表");
+                    await fetchFiles();
+                } else if (type === 'branch' && branchId) {
+                    console.log("分支节点模式，准备创建或加载文件");
+                    await fetchFiles();
+                    console.log("文件列表加载完成，当前文件数量:", allFiles.length);
+                    
+                    // 查找匹配当前节点信息的文件
+                    const file = allFiles.find(f => {
+                        if (!f.tags) return false;
+                        try {
+                            const t = JSON.parse(f.tags);
+                            return t.userId === userId && 
+                                   t.targetId === targetId && 
+                                   t.mainId === mainId && 
+                                   t.branchId === branchId;
+                        } catch { return false; }
+                    });
+                    
+                    if (file) {
+                        console.log("找到匹配的现有文件，加载:", file.name, "文件ID:", file.id);
+                        await loadFile(file.id, file.name);
+                    } else {
+                        console.log("未找到文件，显示空白编辑器");
+                        // 重置编辑器状态，显示空白内容
+                        currentFileId = null;
+                        const blankContent = `# 欢迎使用 LevelUP
+## 请开始编写你的笔记吧！
+在这里记录你的学习内容、想法和计划...
+
+---
+*创建时间：${new Date().toLocaleString('zh-CN')}*`;
+                        
+                        editor.setMarkdown(blankContent);
+                        document.getElementById("file-title").value = "";
+                        isSaved = false;
+                        initialContent = blankContent;
+                        updateStatusIndicator();
+                        updateDebugInfo();
+                        document.getElementById("file-status").textContent = "新建文件";
+                    }
+                }
+            } finally {
+                isInitializing = false;
+            }
+        }
+
+        // 更新文件状态指示器
+        function updateStatusIndicator() {
+            const statusIndicator = document.querySelector('#file-status .status-indicator');
+            const statusText = document.querySelector('#file-status span:last-child');
+            
+            // 检查元素是否存在
+            if (!statusIndicator || !statusText) {
+                console.warn("文件状态指示器元素不存在");
+                return;
+            }
+            
+            if (isSaved) {
+                statusIndicator.className = 'status-indicator status-saved';
+                statusText.textContent = '已保存';
+            } else {
+                statusIndicator.className = 'status-indicator status-unsaved';
+                statusText.textContent = '未保存';
+            }
+        }
+
+        // 监听编辑器内容变化，标记为未保存
+        editor.on('change', () => {
+            isSaved = editor.getMarkdown() === initialContent;
+            updateStatusIndicator();
+        });
+
+        // 新建/保存文件时只用真实名称，tags传分组信息
+        function getFullFilename(inputName) {
+            let name = inputName.trim();
+            if (!name.endsWith('.md')) name += '.md';
+            return name;
+        }
+
+        // 保存文件到后端
+        async function saveToBackend(filename, content, fileId = null) {
+            try {
+                filename = getFullFilename(filename);
+                let tags;
+                if (fileId) {
+                    // 找到当前文件的 tags
+                    const file = allFiles.find(f => f.id === fileId);
+                    tags = file ? file.tags : JSON.stringify(tagsObj);
+                } else {
+                    tags = JSON.stringify(tagsObj);
+                }
+                if (fileId) {
+                    return await updateFile(fileId, filename, content, tags);
+                } else {
+                    return await createFile(filename, content, tags);
+                }
+            } catch (error) {
+                console.error("保存文件错误:", error);
+                showNotification("错误", `保存失败: ${error.message}`, "error");
+                return { success: false, error: error.message };
+            }
+        }
+
+        // 创建新文件
+        async function createFile(filename, content, tags) {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/api/files", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ 
+                        name: filename, 
+                        content: content,
+                        tags: tags,
+                        user_id: userId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`创建文件失败: ${response.statusText} (${response.status})`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || "创建文件失败");
+                }
+
+                console.log("创建成功:", data);
+                lastSaveTime = new Date();
+                isSaved = true;
+                currentFileId = data.data.id; // 更新当前文件ID
+                document.getElementById("file-title").value = data.data.name;
+                
+                // 更新编辑器内容
+                editor.setMarkdown(content);
+                console.log("创建文件后设置编辑器内容:", content.substring(0, 100) + "...");
+                
+                // 更新初始内容
+                initialContent = content;
+                
+                updateStatusIndicator();
+                updateDebugInfo();
+                
+                // 延迟刷新文件列表，避免影响当前编辑器状态
+                setTimeout(() => {
+                    fetchFiles();
+                }, 100);
+                
+                return { success: true, data };
+            } catch (error) {
+                console.error("创建文件失败:", error);
+                showNotification("错误", error.message, "error");
+                throw error;
+            }
+        }
+
+        // 更新现有文件
+        async function updateFile(fileId, filename, content, tags) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/files/${fileId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ 
+                        name: filename, 
+                        content: content,
+                        tags: tags,
+                        user_id: userId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`更新文件失败: ${response.statusText} (${response.status})`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || "更新文件失败");
+                }
+
+                console.log("更新成功:", data);
+                lastSaveTime = new Date();
+                isSaved = true;
+                
+                // 更新初始内容
+                initialContent = content;
+                
+                updateStatusIndicator();
+                updateDebugInfo();
+                fetchFiles(); // 刷新文件列表
+                
+                return { success: true, data };
+            } catch (error) {
+                console.error("更新文件失败:", error);
+                showNotification("错误", error.message, "error");
+                throw error;
+            }
+        }
+
+        // 从后端获取文件列表
+        async function fetchFiles() {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/files?user_id=${encodeURIComponent(userId)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`获取文件列表失败: ${response.statusText} (${response.status})`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || "获取文件列表失败");
+                }
+                
+                // 保存原始文件数据
+                allFiles = data.data;
+                
+                // 默认显示所有文件
+                renderFileTree(allFiles);
+            } catch (error) {
+                console.error("获取文件列表错误:", error);
+                showNotification("错误", error.message, "error");
+                // 显示错误状态
+                document.getElementById("file-list").innerHTML = `
+                    <div class="text-center text-red-500 py-4">
+                        <i class="fa fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>加载文件列表失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 搜索文件
+        function searchFiles(query) {
+            if (!allFiles || allFiles.length === 0) {
+                return;
+            }
+            
+            query = query.toLowerCase().trim();
+            
+            if (!query) {
+                // 如果查询为空，显示所有文件
+                renderFileTree(allFiles);
+                return;
+            }
+            
+            // 过滤文件列表
+            const filteredFiles = allFiles.filter(file => {
+                // 检查文件名是否包含查询字符串
+                return file.name.toLowerCase().includes(query);
+            });
+            
+            renderFileTree(filteredFiles);
+        }
+
+        // 渲染文件列表
+        function renderFileTree(files) {
+            const fileList = document.getElementById("file-list");
+            if (!fileList) {
+                console.error("文件列表元素不存在");
+                return;
+            }
+            fileList.innerHTML = "";
+            // 只显示tags匹配的文件
+            const fileItems = files.filter(file => !file.is_dir && fileTagMatch(file));
+            if (fileItems.length === 0) {
+                fileList.innerHTML = `
+                    <div class="text-center text-gray-400 py-4">
+                        <i class="fa fa-search text-3xl mb-2"></i>
+                        <p>未找到匹配的文件</p>
+                    </div>
+                `;
+                return;
+            }
+            fileItems.forEach(file => {
+                const fileItem = document.createElement("div");
+                fileItem.className = "file-item flex items-center p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-all duration-150";
+                if (file.id === currentFileId) {
+                    fileItem.classList.add("bg-primary/10", "font-medium");
+                }
+                // 只显示真实文件名
+                let displayName = file.name;
+                fileItem.innerHTML = `
+                    <i class="fa fa-file-text-o mr-2 text-gray-500"></i>
+                    <span>${displayName}</span>
+                `;
+                fileItem.addEventListener("click", () => loadFile(file.id, file.name));
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 加载文件内容
+        async function loadFile(fileId, filename) {
+            // 如果当前文件有未保存的更改，提示用户
+            if (!isSaved) {
+                if (!confirm("当前文件有未保存的更改，是否继续加载其他文件？")) {
+                    return;
+                }
+            }
+            try {
+                console.log("开始加载文件:", fileId, filename);
+                const response = await fetch(`http://127.0.0.1:5000/api/files/${fileId}`);
+                if (!response.ok) {
+                    throw new Error(`加载文件失败: ${response.statusText} (${response.status})`);
+                }
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || "加载文件失败");
+                }
+                const content = data.data.content || "";
+                console.log("加载的文件内容预览:", content.substring(0, 100) + "...");
+                console.log("文件完整内容:", content);
+                
+                editor.setMarkdown(content);
+                // 只显示真实文件名
+                let displayName = data.data.name;
+                document.getElementById("file-title").value = displayName;
+                currentFileId = fileId;
+                isSaved = true;
+                // 更新初始内容
+                initialContent = content;
+                updateStatusIndicator();
+                updateDebugInfo();
+                document.getElementById("file-status").textContent = "已加载";
+                // 重新渲染文件列表以高亮显示当前文件
+                renderFileTree(allFiles);
+            } catch (error) {
+                console.error("加载文件错误:", error);
+                showNotification("错误", error.message, "error");
+                currentFileId = null; // 加载失败时重置文件ID
+            }
+        }
+
+        // 显示通知
+        function showNotification(title, message, type = "info") {
+            const notification = document.getElementById("notification");
+            const icon = document.getElementById("notification-icon");
+            const notificationTitle = document.getElementById("notification-title");
+            const notificationMessage = document.getElementById("notification-message");
+            
+            // 检查元素是否存在
+            if (!notification || !icon || !notificationTitle || !notificationMessage) {
+                console.error("通知元素不存在");
+                return;
+            }
+            
+            // 清除现有类名
+            icon.className = "mr-3 mt-0.5";
+            notification.className = "fixed top-4 right-4 max-w-md bg-white shadow-lg rounded-lg p-4 z-50 transform translate-x-full transition-transform duration-300";
+            
+            // 根据类型设置样式
+            switch (type) {
+                case "success":
+                    icon.className = "fa fa-check-circle text-green-500 mr-3 mt-0.5";
+                    notification.classList.add("bg-green-50");
+                    break;
+                case "error":
+                    icon.className = "fa fa-exclamation-circle text-red-500 mr-3 mt-0.5";
+                    notification.classList.add("bg-red-50");
+                    break;
+                case "warning":
+                    icon.className = "fa fa-exclamation-triangle text-yellow-500 mr-3 mt-0.5";
+                    notification.classList.add("bg-yellow-50");
+                    break;
+                default:
+                    icon.className = "fa fa-info-circle text-blue-500 mr-3 mt-0.5";
+                    notification.classList.add("bg-blue-50");
+            }
+            
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // 显示通知
+            notification.classList.remove("translate-x-full");
+            notification.classList.add("translate-x-0");
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                if (notification) {
+                    notification.classList.remove("translate-x-0");
+                    notification.classList.add("translate-x-full");
+                }
+            }, 3000);
+        }
+
+        // 新建文件
+        function newFile() {
+            if (!isSaved) {
+                if (!confirm("当前文件有未保存的更改，是否继续创建新文件？")) {
+                    return;
+                }
+            }
+            currentFileId = null;
+            const defaultContent = `# 欢迎使用 LevelUP
+
+## 请开始编写你的笔记吧！
+在这里记录你的学习内容、想法和计划...
+
+---
+*创建时间：${new Date().toLocaleString('zh-CN')}*`;
+
+            editor.setMarkdown(defaultContent);
+            document.getElementById("file-title").value = "";
+            isSaved = false;
+            initialContent = defaultContent;
+            updateStatusIndicator();
+            updateDebugInfo();
+            document.getElementById("file-status").textContent = "新建文件";
+        }
+
+        // 更新调试信息
+        function updateDebugInfo() {
+            const debugFileId = document.getElementById('debug-file-id');
+            const debugContentLength = document.getElementById('debug-content-length');
+            const debugLastAction = document.getElementById('debug-last-action');
+            
+            // 检查元素是否存在
+            if (!debugFileId || !debugContentLength || !debugLastAction) {
+                console.warn("调试信息元素不存在");
+                return;
+            }
+            
+            debugFileId.textContent = currentFileId || 'null';
+            debugContentLength.textContent = editor.getMarkdown().length;
+            debugLastAction.textContent = lastSaveTime ? 
+                `保存于 ${lastSaveTime.toLocaleTimeString()}` : '无';
+        }
+
+        // 事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveBtn = document.getElementById("save-btn");
+            const newFileBtn = document.getElementById("new-file-btn");
+            const deleteBtn = document.getElementById("delete-btn");
+            const searchInput = document.getElementById("search-files");
+            const backBtn = document.getElementById('back-to-roadmap');
+            
+            // 检查按钮是否存在
+            if (saveBtn) {
+                saveBtn.addEventListener("click", async() => {
+                    const content = editor.getMarkdown();
+                    const filename = document.getElementById("file-title").value.trim() || "未命名.md";
+                    
+                    try {
+                        const result = await saveToBackend(filename, content, currentFileId);
+                        
+                        if (result.success) {
+                            // 更新当前文件ID（如果是新建文件）
+                            if (!currentFileId) {
+                                currentFileId = result.data.data.id;
+                            }
+                        }
+                    } catch (error) {
+                        console.error("保存文件错误:", error);
+                        showNotification("错误", "保存失败，请检查网络或后端服务", "error");
+                    }
+                });
+            }
+            
+            if (newFileBtn) {
+                newFileBtn.addEventListener("click", newFile);
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener("click", async() => {
+                    if (!currentFileId) {
+                        showNotification("警告", "当前没有可删除的文件", "warning");
+                        return;
+                    }
+                    
+                    if (!confirm("确定要删除此文件吗？此操作不可恢复。")) {
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`http://127.0.0.1:5000/api/files/${currentFileId}?user_id=${encodeURIComponent(userId)}`, {
+                            method: "DELETE"
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`删除文件失败: ${response.statusText} (${response.status})`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (!data.success) {
+                            throw new Error(data.error || "删除文件失败");
+                        }
+                        
+                        showNotification("成功", "文件删除成功", "success");
+                        
+                        // 重置编辑器状态
+                        currentFileId = null;
+                        const defaultContent = `# 欢迎使用 LevelUP
+
+## 请开始编写你的笔记吧！
+
+在这里记录你的学习内容、想法和计划...
+---
+*创建时间：${new Date().toLocaleString('zh-CN')}*`;
+
+                        editor.setMarkdown(defaultContent);
+                        document.getElementById("file-title").value = "未命名.md";
+                        
+                        // 删除后应标记为已保存状态
+                        isSaved = true;
+                        initialContent = defaultContent;
+                        
+                        updateStatusIndicator();
+                        updateDebugInfo();
+                        
+                        // 刷新文件列表
+                        fetchFiles();
+                    } catch (error) {
+                        console.error("删除文件错误:", error);
+                        showNotification("错误", error.message, "error");
+                    }
+                });
+            }
+            
+            // 设置搜索功能
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    searchFiles(e.target.value);
+                });
+            }
+            
+            // 初始化：加载文件列表
+            fetchFiles().then(autoOpenOrCreateNodeFile);
+
+            // type=main时隐藏新建文件按钮
+            if (type === 'main' && newFileBtn) {
+                newFileBtn.style.display = 'none';
+            }
+
+            // 返回按钮逻辑
+            if (backBtn) {
+                backBtn.addEventListener('click', function() {
+                    // 跳转到roadmap_page.html并带上目标id和title参数
+                    const targetId = sessionStorage.getItem('md_target_id') || '';
+                    const targetTitle = sessionStorage.getItem('md_target_title') || '';
+                    if (targetId) {
+                        window.location.href = `roadmap_page.html?target_id=${encodeURIComponent(targetId)}&target_title=${encodeURIComponent(targetTitle)}`;
+                    } else {
+                        window.location.href = 'roadmap_page.html';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
