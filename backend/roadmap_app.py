@@ -71,13 +71,13 @@ def api_update_main_node(node_id):
     返回：操作结果
     """
     data = request.get_json()
-    user_id = data.get('user_id')
+    # user_id = data.get('user_id')  # 未使用，移除
     title = data.get('title')
     status = data.get('status')
     remark = data.get('remark', '')
     target_id = data.get('target_id', 'testtarget')
-    if not user_id or not title or not status or not target_id:
-        return jsonify({'success': False, 'error': 'user_id、参数不完整'})
+    if not title or not status or not target_id:
+        return jsonify({'success': False, 'error': '参数不完整'})
     update_main_node(node_id, title, status, remark, target_id)
     return jsonify({'success': True})
 
@@ -89,13 +89,13 @@ def api_update_branch_node(node_id):
     返回：操作结果
     """
     data = request.get_json()
-    user_id = data.get('user_id')
+    # user_id = data.get('user_id')  # 未使用，移除
     title = data.get('title')
     status = data.get('status')
     remark = data.get('remark', '')
     target_id = data.get('target_id', 'testtarget')
-    if not user_id or not title or not status or not target_id:
-        return jsonify({'success': False, 'error': 'user_id、参数不完整'})
+    if not title or not status or not target_id:
+        return jsonify({'success': False, 'error': '参数不完整'})
     update_branch_node(node_id, title, status, remark, target_id)
     return jsonify({'success': True})
 
