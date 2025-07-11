@@ -25,7 +25,7 @@ jobs:
       - name: Lint backend code
         run: |
           pip install flake8
-          flake8 LevelUP-main/backend
+          flake8 backend
 
       # - name: Run backend tests
       #   run: |
@@ -49,7 +49,7 @@ jobs:
       - name: Lint frontend code
         run: |
           pip install flake8
-          flake8 LevelUP-main/frontend
+          flake8 frontend
 
       # 如果你后续有前端 JS/Vue 构建流程，可在这里加 npm/yarn 步骤
       # - name: Build frontend
