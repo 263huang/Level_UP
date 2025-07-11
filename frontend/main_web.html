@@ -1,0 +1,1686 @@
+<!--
+  文件名：main_web.html
+  作用：LevelUP主界面，包含导航栏、侧边栏、学习目标卡片、待办事项、笔记管理等主要功能
+  主要功能：
+    - 用户登录后主界面展示
+    - 学习目标增删改查
+    - Roadmap节点和笔记的搜索与跳转
+    - 待办事项管理
+    - 个人信息与设置
+    - 新建/导入/导出笔记
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 网页基础设置和引入资源 -->
+    <meta charset="UTF-8">
+    <title>LevelUP - 个性化知识成长系统</title>
+    <!-- 引入 Vue 3 CDN，用于构建交互式前端界面 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 引入 Google Fonts - Roboto 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- 内嵌样式表，定义了整个页面的视觉风格和布局 -->
+    <style>
+        /* 主题色变量定义，极简清新风格 */
+        :root {
+            /* 主背景色、主文字色、主题色、辅助色、边框色、次要文字色 */
+            --main-bg: #fff;
+            --main-text: #222;
+            --main-purple: #6b4eff;
+            --main-blue: #9cd6ff;
+            --main-border: #e6eaf0;
+            --main-gray: #888;
+        }
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif; /* 字体设置，优先使用 Roboto */
+            margin: 0; /* 移除默认外边距 */
+            background: var(--main-bg); /* 应用主背景色 */
+            color: var(--main-text); /* 应用主文字色 */
+            /* 新增背景纹理效果 */
+            background-image: radial-gradient(circle at center, rgba(107, 78, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        /* 导航头部样式 */
+        .nav-header {
+            display: flex; /* Flex布局，使子项水平排列 */
+            align-items: center; /* 垂直居中对齐 */
+            justify-content: space-between; /* 子项两端对齐 */
+            background: var(--main-bg); /* 白色导航栏背景 */
+            padding: 0 40px; /* 左右内边距 */
+            height: 60px; /* 固定高度 */
+            box-shadow: 0 2px 8px rgba(107, 78, 255, 0.08); /* 底部阴影，轻微突出 */
+            /* 新增加载动画 */
+            opacity: 0;
+            animation: fadeInDown 0.8s ease-out forwards;
+            position: relative; /* 确保z-index生效 */
+            z-index: 500; /* 导航栏层级 */
+        }
+        /* 定义导航栏渐入动画 */
+        @keyframes fadeInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* 导航栏Logo样式 */
+        .nav-logo {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--main-purple); /* Logo颜色 */
+            letter-spacing: 2px; /* 字符间距 */
+            font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', 'Arial Rounded MT Bold', 'Arial', 'sans-serif', 'monospace'; /* 圆体等宽英文字体 */
+        }
+        /* 导航栏搜索区域样式 */
+        .nav-search {
+            position: relative;
+            width: 400px; /* 保证和input宽度一致，或用100%自适应 */
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            z-index: 2001; /* 保证搜索区域在上层 */
+        }
+        .nav-search input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 40px 8px 16px; /* 右侧留空间给图标 */
+            border-radius: 8px;
+            border: 1.5px solid #e6eaf0; /* 浅灰色边框 */
+            font-size: 1em;
+            outline: none;
+            background: #f8fafc;
+            color: var(--main-text);
+            box-shadow: 0 2px 8px rgba(163, 216, 255, 0.04);
+            transition: box-shadow 0.25s, border-color 0.25s;
+        }
+        .nav-search input:focus, .nav-search input.searching {
+            box-shadow: 0 4px 16px 0 rgba(50,91,168,0.13), 0 2px 8px rgba(163,216,255,0.08);
+            border-color: var(--main-blue);
+        }
+        .nav-search .search-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #bbb;
+            font-size: 1.2em;
+            pointer-events: none;
+        }
+        /* 导航栏用户头像样式 */
+        .nav-avatar img {
+            border-radius: 50%; /* 圆形头像 */
+            width: 40px; /* 宽度 */
+            border: 2px solid var(--main-purple); /* 边框颜色 */
+        }
+        /* 主内容区域容器样式 */
+        .container {
+            display: flex; /* Flex布局，使侧边栏和主内容区水平排列 */
+            padding: 24px 0 0 8px; /* 上内边距和左内边距 */
+            gap: 20px; /* 子项之间的间距 */
+            max-width: 1300px; /* 最大宽度 */
+            margin: 0 auto; /* 水平居中 */
+            position: relative; /* 确保z-index生效 */
+            z-index: 1; /* 比导航栏低 */
+        }
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 220px; /* 固定宽度 */
+            background: var(--main-bg); /* 背景色 */
+            border-radius: 12px; /* 圆角 */
+            padding: 18px 16px; /* 内边距 */
+            box-shadow: 0 2px 8px rgba(163, 216, 255, 0.06); /* 阴影 */
+            min-width: 180px; /* 最小宽度，防止内容过多时过度缩小 */
+            border: 1.5px solid var(--main-border); /* 边框 */
+        }
+        /* 侧边栏标题样式 */
+        .sidebar h3 {
+            color: var(--main-purple); /* 标题颜色 */
+            margin-bottom: 10px; /* 底部外边距 */
+            font-size: 1.1em; /* 字体大小 */
+        }
+        /* 侧边栏用户头像样式 */
+        .sidebar .avatar {
+            display: block; /* 块级元素，使其可以设置margin: auto居中 */
+            margin: 0 auto 10px auto; /* 水平居中，底部外边距 */
+            border-radius: 50%; /* 圆形头像 */
+            width: 64px; /* 宽度 */
+            height: 64px; /* 高度 */
+            object-fit: cover; /* 图像填充方式 */
+            border: 2px solid var(--main-purple); /* 边框 */
+        }
+        /* 侧边栏用户名样式 */
+        .sidebar .username {
+            text-align: center; /* 文本居中 */
+            font-weight: bold; /* 粗体 */
+            font-size: 1.05em; /* 字体大小 */
+            margin-bottom: 2px; /* 底部外边距 */
+            color: var(--main-text); /* 文字颜色 */
+        }
+        /* 侧边栏等级样式 */
+        .sidebar .level {
+            text-align: center; /* 文本居中 */
+            margin-bottom: 8px; /* 底部外边距 */
+            color: var(--main-purple); /* 文字颜色 */
+            font-size: 0.98em; /* 字体大小 */
+        }
+        /* 侧边栏经验条背景样式 */
+        .sidebar .progress-bar-bg {
+            width: 90%; /* 宽度 */
+            height: 12px; /* 高度 */
+            background: var(--main-blue); /* 背景色 */
+            border-radius: 8px; /* 圆角 */
+            margin: 0 auto 4px auto; /* 水平居中，底部外边距 */
+            overflow: hidden; /* 隐藏超出部分 */
+        }
+        /* 侧边栏经验条实际进度样式 */
+        .sidebar .progress-bar {
+            height: 100%; /* 高度占满父元素 */
+            background: linear-gradient(90deg, var(--main-purple), var(--main-blue)); /* 渐变色 */
+            border-radius: 8px; /* 圆角 */
+            width: 80%; /* 初始进度，通过Vue动态绑定 */
+            transition: width 0.3s; /* 宽度变化的过渡动画 */
+        }
+        /* 侧边栏经验值文本样式 */
+        .sidebar .exp {
+            text-align: center; /* 文本居中 */
+            font-size: 0.93em; /* 字体大小 */
+            margin-bottom: 6px; /* 底部外边距 */
+            color: var(--main-text); /* 文字颜色 */
+        }
+        /* 侧边栏今日学习时长文本样式 */
+        .sidebar .today {
+            color: var(--main-purple); /* 文字颜色 */
+            text-align: center; /* 文本居中 */
+            margin-bottom: 10px; /* 底部外边距 */
+            font-size: 0.95em; /* 字体大小 */
+        }
+        /* 侧边栏分隔线样式 */
+        .sidebar hr {
+            width: 90%; /* 宽度 */
+            border: none; /* 无边框 */
+            border-top: 1px solid var(--main-border); /* 顶部实线边框 */
+            margin: 12px auto; /* 垂直居中，上下外边距 */
+        }
+        /* 侧边栏章节标题样式 */
+        .sidebar .section-title {
+            text-align: center; /* 文本居中 */
+            font-weight: bold; /* 粗体 */
+            margin-bottom: 6px; /* 底部外边距 */
+            color: var(--main-purple); /* 文字颜色 */
+            font-size: 1em; /* 字体大小 */
+        }
+        /* 侧边栏普通按钮样式 */
+        .sidebar .btn {
+            width: 92%; /* 宽度 */
+            padding: 8px 0; /* 垂直内边距 */
+            margin: 0 auto 8px auto; /* 水平居中，底部外边距 */
+            border: none; /* 无边框 */
+            border-radius: 8px; /* 圆角 */
+            background: var(--main-purple); /* 背景色 */
+            color: var(--main-bg); /* 文字颜色 */
+            font-weight: bold; /* 粗体 */
+            font-size: 1em; /* 字体大小 */
+            cursor: pointer; /* 鼠标指针样式 */
+            transition: background 0.2s; /* 背景色过渡动画 */
+            display: block; /* 块级元素 */
+        }
+        /* 侧边栏按钮悬停效果 */
+        .sidebar .btn:hover {
+            background: var(--main-blue); /* 悬停背景色 */
+            color: var(--main-text); /* 悬停文字颜色 */
+        }
+        /* 侧边栏次要按钮样式 */
+        .sidebar .btn.secondary {
+            background: var(--main-blue); /* 背景色 */
+            color: var(--main-purple); /* 文字颜色 */
+        }
+        /* 侧边栏通知/警示框样式 */
+        .sidebar .alert {
+            width: 92%; /* 宽度 */
+            margin: 0 auto 10px auto; /* 水平居中，底部外边距 */
+            background: var(--main-blue); /* 背景色 */
+            color: var(--main-text); /* 文字颜色 */
+            border-radius: 6px; /* 圆角 */
+            padding: 8px 10px; /* 内边距 */
+            font-size: 0.98em; /* 字体大小 */
+            display: flex; /* Flex布局 */
+            align-items: center; /* 垂直居中 */
+        }
+        /* 侧边栏通知/警示框伪元素（用于图标或装饰） */
+        .sidebar .alert::before {
+            content: ''; /* 空内容 */
+            margin-right: 5px; /* 右外边距 */
+        }
+        /* 新增：待办事项列表样式 */
+        .todo-input-group { /* 这个现在只作为占位符，实际输入已移到浮窗 */
+            display: flex;
+            margin: 10px auto 15px auto;
+            width: 92%;
+            gap: 8px;
+        }
+
+        .todo-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--main-border);
+            border-radius: 8px;
+            font-size: 0.95em;
+            background: #f8fafc;
+            color: var(--main-text);
+            outline: none;
+        }
+
+        .todo-input-group .todo-add-btn {
+            width: auto;
+            padding: 8px 15px;
+            font-size: 0.95em;
+            border-radius: 8px;
+            background: var(--main-purple);
+            color: var(--main-bg);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .todo-input-group .todo-add-btn:hover {
+            background: var(--main-blue);
+            color: var(--main-purple);
+        }
+
+        /* 加号按钮样式 */
+        .add-todo-btn {
+            width: 92%; /* 宽度 */
+            padding: 8px 0; /* 垂直内边距 */
+            margin: 10px auto 8px auto; /* 水平居中，底部外边距 */
+            border: none; /* 无边框 */
+            border-radius: 8px; /* 圆角 */
+            background: var(--main-purple); /* 背景色 */
+            color: var(--main-bg); /* 文字颜色 */
+            font-weight: bold; /* 粗体 */
+            font-size: 1.5em; /* 字体大小，显示为加号 */
+            cursor: pointer; /* 鼠标指针样式 */
+            transition: background 0.2s, transform 0.1s; /* 背景色过渡动画 */
+            display: block; /* 块级元素 */
+            line-height: 1; /* 确保加号居中 */
+            text-align: center;
+        }
+        .add-todo-btn:hover {
+            background: var(--main-blue); /* 悬停背景色 */
+            color: var(--main-text); /* 悬停文字颜色 */
+            transform: scale(1.05);
+        }
+
+        .todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 auto;
+            width: 92%;
+        }
+
+        .todo-list li {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid var(--main-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            color: var(--main-text);
+            transition: background 0.2s;
+            cursor: pointer; /* 使整个li可点击 */
+        }
+
+        .todo-list li.completed {
+            background: #e6eaf0;
+            text-decoration: line-through;
+            color: var(--main-gray);
+        }
+
+        /* 隐藏原始复选框，使用自定义圆点 */
+        /* .todo-list li input[type="checkbox"] {
+            margin-right: 10px;
+            min-width: 16px;
+            min-height: 16px;
+            cursor: pointer;
+            accent-color: var(--main-purple);
+        } */
+
+        /* 自定义小圆点样式 */
+        .todo-circle {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--main-purple);
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0; /* 防止被挤压 */
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .todo-circle.completed {
+            background-color: var(--main-purple);
+            border-color: var(--main-purple);
+        }
+
+        .todo-circle.completed::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--main-bg); /* 完成后的白色内圆 */
+            border-radius: 50%;
+        }
+
+        .todo-list li .todo-text {
+            flex: 1;
+            word-break: break-word; /* 允许文本在单词内换行 */
+        }
+
+        .todo-list .no-todos-message {
+            text-align: center;
+            color: var(--main-gray);
+            padding: 10px 0; /* 减小垂直内边距 */
+            font-size: 0.85em; /* 减小字体大小 */
+            width: 100%; /* 减小宽度 */
+            margin: 10px auto; /* 水平居中 */
+        }
+        /* 主内容区域样式 */
+        .main {
+            flex: 1; /* 占据剩余可用空间 */
+            min-width: 0; /* 防止内容溢出，允许缩小 */
+            position: relative; /* 确保z-index生效 */
+            z-index: 1; /* 比侧边栏低 */
+        }
+        /* 主内容区标题样式 */
+        .main-title {
+            font-size: 1.25em; /* 字体大小 */
+            font-weight: bold; /* 粗体 */
+            color: var(--main-purple); /* 颜色 */
+            margin-bottom: 18px; /* 底部外边距 */
+            margin-top: 0; /* 顶部外边距 */
+            letter-spacing: 1px; /* 字符间距 */
+        }
+        /* 卡片列表容器样式 */
+        .card-list {
+            display: grid; /* 网格布局 */
+            grid-template-columns: repeat(2, 1fr); /* 两列，每列等宽 */
+            column-gap: 56px; /* 列间距 */
+            row-gap: 28px; /* 行间距 */
+            width: 100%; /* 宽度 */
+            position: relative; /* 确保z-index生效 */
+            z-index: 1; /* 默认层级 */
+        }
+        /* 单个学习目标卡片样式 */
+        .card {
+            background: var(--main-bg); /* 背景色 */
+            border-radius: 14px; /* 圆角 */
+            box-shadow: 0 2px 8px rgba(107,78,255,0.07); /* 阴影 */
+            padding: 22px 20px 16px 20px; /* 内边距 */
+            width: 100%; /* 宽度 */
+            color: var(--main-text); /* 文字颜色 */
+            display: flex; /* Flex布局 */
+            flex-direction: column; /* 垂直排列 */
+            justify-content: space-between; /* 内容上下两端对齐 */
+            margin-bottom: 0; /* 底部外边距 */
+            position: relative; /* 相对定位，用于内部绝对定位元素 */
+            border: 1.5px solid var(--main-border); /* 边框 */
+            cursor: pointer; /* 添加指针样式，表明可点击 */
+            transition: transform 0.2s ease-in-out; /* 悬停动画 */
+            z-index: 1; /* 确保卡片在正常流中 */
+        }
+        .card:hover {
+            transform: translateY(-5px); /* 悬停时向上轻微移动 */
+        }
+        /* 卡片标题样式 */
+        .card-title {
+            font-size: 1.7em; /* 字体大小 */
+            font-weight: bold; /* 粗体 */
+            color: var(--main-purple); /* 颜色 */
+            margin-bottom: 10px; /* 底部外边距 */
+            letter-spacing: 1px; /* 字符间距 */
+        }
+        /* 卡片进度条背景样式 */
+        .card-progress-bg {
+            width: 100%;
+            height: 14px;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            border: 1.5px solid var(--main-border);
+            box-shadow: 0 0 6px 1px #a3d8ff20;
+            position: relative;
+        }
+        /* 卡片进度条实际进度样式 */
+        .card-progress {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.3s;
+            box-shadow: 0 0 6px 1px #a3d8ff80;
+            position: absolute;
+            left: 0; top: 0;
+            background: linear-gradient(90deg, var(--main-purple), var(--main-blue));
+        }
+        /* 进度为0时隐藏填色 */
+        .card-progress[style*="width: 0%"] {
+            background: none !important;
+            box-shadow: none !important;
+        }
+        /* 卡片标签区域样式 */
+        .card-tags {
+            margin: 8px 0 4px 0; /* 上下外边距 */
+        }
+        /* 单个卡片标签样式 */
+        .card-tag {
+            display: inline-block; /* 行内块级元素，使其可以并排显示并设置内外边距 */
+            background: var(--main-purple); /* 背景色 */
+            color: var(--main-bg); /* 文字颜色 */
+            border-radius: 8px; /* 圆角 */
+            padding: 2px 10px; /* 内边距 */
+            font-size: 0.98em; /* 字体大小 */
+            margin-right: 6px; /* 右外边距 */
+            margin-bottom: 2px; /* 底部外边距 */
+            font-weight: bold; /* 粗体 */
+        }
+        /* 卡片更新时间文本样式 */
+        .card-update {
+            color: var(--main-gray); /* 文字颜色 */
+            font-size: 0.98em; /* 字体大小 */
+            margin-bottom: 8px; /* 底部外边距 */
+        }
+        /* 卡片底部操作按钮区域样式 */
+        .card-footer {
+            display: flex; /* Flex布局 */
+            flex-direction: row; /* 水平排列 */
+            align-items: center; /* 垂直居中 */
+            gap: 16px; /* 子项间距 */
+            margin-top: 8px; /* 顶部外边距 */
+        }
+        /* 卡片底部图标按钮样式 */
+        .icon-btn {
+            background: none; /* 无背景 */
+            border: none; /* 无边框 */
+            cursor: pointer; /* 鼠标指针样式 */
+            font-size: 1.2em; /* 字体大小 */
+            color: var(--main-purple); /* 颜色 */
+            transition: color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.18s;
+            padding: 0 4px; /* 左右内边距 */
+        }
+        /* 卡片底部图标按钮悬停效果 */
+        .icon-btn:hover {
+            background: rgba(107, 78, 255, 0.08); /* 柔和淡紫色背景 */
+            color: var(--main-purple);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(107,78,255,0.10);
+            transform: scale(1.08);
+        }
+        /* 媒体查询：当屏幕宽度小于900px时，调整布局为单列 */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column; /* 主内容区和侧边栏改为垂直排列 */
+                padding: 8px; /* 内边距 */
+            }
+            .sidebar {
+                width: 100%; /* 侧边栏宽度占满 */
+                margin-bottom: 16px; /* 底部外边距 */
+            }
+            .card-list {
+                grid-template-columns: 1fr; /* 卡片列表改为单列 */
+                row-gap: 18px; /* 行间距 */
+            }
+            .card {
+                width: 100%; /* 卡片宽度占满 */
+            }
+        }
+        /* 媒体查询：当屏幕宽度小于600px时，进一步调整布局和内边距 */
+        @media (max-width: 600px) {
+            .nav-header {
+                flex-direction: column; /* 导航栏改为垂直排列 */
+                height: auto; /* 高度自适应 */
+                padding: 8px; /* 内边距 */
+                gap: 8px; /* 子项间距 */
+            }
+            .container {
+                padding: 0; /* 移除内边距 */
+            }
+            .sidebar {
+                padding: 12px 6px; /* 调整内边距 */
+            }
+            .card {
+                padding: 14px 8px 10px 8px; /* 调整内边距 */
+            }
+        }
+        /* 新增的学习目标表单样式 */
+        .add-target-form {
+            margin-bottom: 20px;
+        }
+        .add-target-form h3 {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-actions {
+            text-align: right;
+        }
+        .form-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--main-purple);
+            color: var(--main-bg);
+            cursor: pointer;
+        }
+        .form-actions button:hover {
+            background-color: var(--main-blue);
+        }
+        /* 新增：模态对话框的样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* 确保在其他内容之上 */
+        }
+
+        .modal-content {
+            background-color: var(--main-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        /* 新增：关闭按钮样式 */
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--main-gray);
+            transition: color 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--main-text);
+        }
+
+        /* 调整表单标题和按钮的样式，使其更符合浮窗布局 */
+        .target-form .form-title {
+            font-size: 1.5em;
+            color: var(--main-purple);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .target-form .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .target-form .form-actions .btn {
+            width: auto; /* 让按钮宽度自适应内容 */
+            padding: 10px 20px;
+            margin: 0;
+        }
+
+        .target-form .form-group label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--main-text);
+        }
+
+        .target-form .form-group input {
+            background: #f8fafc;
+            border: 1px solid var(--main-border);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        /* 新增：待办事项浮窗样式 (复用modal-overlay和modal-content) */
+        .todo-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .todo-modal-content {
+            background-color: var(--main-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 400px; /* 待办浮窗可以小一点 */
+            position: relative;
+        }
+
+        .todo-form-title {
+            font-size: 1.5em;
+            color: var(--main-purple);
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .todo-form .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .todo-form .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--main-text);
+        }
+
+        .todo-form .form-group input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid var(--main-border);
+            border-radius: 8px;
+            font-size: 1em;
+            background: #f8fafc;
+            color: var(--main-text);
+        }
+
+        .todo-form .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .todo-form .form-actions .btn {
+            width: auto;
+            padding: 10px 20px;
+            margin: 0;
+        }
+
+        /* 新增：删除动画效果 */
+        .todo-list li.fade-out {
+            animation: fadeOutSlideUp 0.5s forwards; /* 0.5秒动画，保持最终状态 */
+        }
+
+        @keyframes fadeOutSlideUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+                height: auto;
+                margin-bottom: 8px;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-5px);
+                height: 0; /* 动画结束后高度变为0 */
+                margin-bottom: 0; /* 动画结束后外边距变为0 */
+                padding-top: 0;
+                padding-bottom: 0;
+                border: none; /* 移除边框 */
+            }
+        }
+        .roadmap-dropdown {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 400px;
+            background: #fff;
+            border: 1.5px solid #e6eaf0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 8px 32px 0 rgba(50,91,168,0.13), 0 2px 8px rgba(163,216,255,0.08);
+            z-index: 3000; /* 保证下拉在最上层，高于所有模态框和导航栏 */
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            transition: box-shadow 0.25s;
+        }
+        .nav-search input:focus + .roadmap-dropdown,
+        .nav-search input.searching + .roadmap-dropdown {
+            box-shadow: 0 12px 36px 0 rgba(50,91,168,0.18), 0 2px 8px rgba(163,216,255,0.10);
+        }
+        .roadmap-dropdown li {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 1em;
+            color: #222;
+            transition: background 0.15s;
+        }
+        .roadmap-dropdown li:hover {
+            background: #f3f4fa;
+        }
+        .dropdown-loading, .dropdown-empty {
+            color: #888;
+            text-align: center;
+            padding: 12px 0;
+        }
+        .icon-btn.favorited i {
+            color: #ffd700;
+        }
+        /* 确保卡片区域始终在下方 */
+        /* 移除原有的 z-index: 1 !important; 和 position: relative; 因为它们可能限制了下拉框的层级 */
+        /* .card, .card-list, .main, .container {
+            z-index: 1 !important;
+            position: relative;
+        } */
+        /* 保证下拉框不会被父元素裁剪 */
+        .nav-header, .container, .main, .card-list {
+            overflow: visible !important;
+        }
+        /* Modal浮窗层级提升，确保弹窗完全遮住导航栏和侧边栏 */
+        .modal-overlay,
+        .todo-modal-overlay {
+            z-index: 5000 !important;
+            position: fixed;
+        }
+        .modal-content,
+        .todo-modal-content {
+            z-index: 5001 !important;
+            position: relative;
+        }
+        /* 弹窗出现时隐藏导航栏 */
+        .nav-header.hide-when-modal {
+            display: none !important;
+        }
+    </style>
+    <!-- 引入 Font Awesome 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Vue 挂载点，整个页面的根容器 -->
+    <div id="app">
+        <!-- 顶部导航栏区域 -->
+        <!-- 导航栏包含Logo、搜索框、用户操作按钮 -->
+        <div class="nav-header">
+            <div class="nav-logo">LevelUP</div> <!-- 左侧Logo文本 -->
+            <!-- 中间搜索框区域 -->
+            <div class="nav-search">
+                <input
+                    type="text"
+                    placeholder="搜索学习目标、技能点或笔记标题…"
+                    v-model="search"
+                    @input="searchRoadmapNodes"
+                    @focus="searchRoadmapNodes"
+                    @blur="closeRoadmapDropdown"
+                    @keyup.enter="performSearch"
+                    :class="{searching: showRoadmapDropdown}"
+                    autocomplete="off"
+                >
+                <!-- 搜索图标 -->
+                <span class="search-icon"><i class="fa fa-search"></i></span>
+                <!-- 下拉结果框 -->
+                <ul v-if="showRoadmapDropdown" class="roadmap-dropdown">
+                    <li v-if="isSearchingRoadmap" class="dropdown-loading">正在搜索…</li>
+                    <!-- Roadmap节点 -->
+                    <template v-if="roadmapSearchResults.length">
+                        <li style="font-weight:bold;color:#6b4eff;padding-top:6px;">Roadmap节点</li>
+                        <li v-for="node in roadmapSearchResults" :key="'roadmap-'+node.id" @mousedown.prevent="handleRoadmapResultClick(node)">
+                            <span v-if="node.node_type==='main'">[主]</span>
+                            <span v-else>[分]</span>
+                            {{ node.title }} <span style="color:#888;">({{ getTargetTitleById(node.target_id) }})</span>
+                        </li>
+                    </template>
+                    <!-- md文件 -->
+                    <template v-if="mdSearchResults.length">
+                        <li style="font-weight:bold;color:#52c41a;padding-top:6px;">笔记文件</li>
+                        <li v-for="file in mdSearchResults" :key="'md-'+file.id" @mousedown.prevent="handleMdResultClick(file)">
+                            <span class="fa fa-file-text-o" style="margin-right:4px;color:#52c41a;"></span>
+                            {{ file.name }}
+                        </li>
+                    </template>
+                    <li v-if="!isSearchingRoadmap && roadmapSearchResults.length === 0 && mdSearchResults.length === 0" class="dropdown-empty">未找到相关节点或笔记</li>
+                </ul>
+            </div>
+            <!-- 右侧用户头像区域 -->
+            <div class="nav-avatar">
+                <!-- 优化退出登录按钮样式 -->
+                <button class="btn" style="padding:8px 20px;font-size:1em;border-radius:8px;background:var(--main-purple);color:var(--main-bg);font-weight:bold;border:none;transition:background 0.2s;" @click="attemptLogout">
+                    退出登录
+                </button>
+            </div>
+        </div>
+
+        <!-- 主体内容区域，包含侧边栏和主内容区 -->
+        <div class="container" v-if="isLoggedIn">
+            <!-- 左侧个人信息栏（侧边栏） -->
+            <!-- 侧边栏包含个人信息、快捷操作、待办事项、设置等 -->
+            <div class="sidebar">
+                <h3><i class="fa fa-user-circle"></i> 个人信息</h3>
+                <!-- 用户头像 -->
+                <div style="position:relative;width:64px;margin:0 auto 10px auto;">
+                    <img class="avatar" :src="user.avatar">
+                    <button class="icon-btn" style="position:absolute;bottom:0;right:0;background:#fff;border-radius:50%;padding:4px;" @click="triggerAvatarUpload" title="更换头像"><i class="fa fa-camera"></i></button>
+                    <input type="file" ref="avatarInput" style="display:none" accept="image/*" @change="onAvatarChange">
+                </div>
+                <!-- 用户名 -->
+                <div class="username">{{ loggedInUsername }}</div>
+                <hr> <!-- 分隔线 -->
+                <div class="section-title"> 快捷操作</div>
+                <!-- 快捷操作按钮：新建目标、新建笔记、导入导出等 -->
+                <button class="btn" @click="openForm('add')"> 新建学习目标</button>
+                <button class="btn" @click="openNoteForm"> 新建笔记</button>
+                <button class="btn" @click="handleSidebarButtonClick('导入/导出')"> 导入笔记</button>
+                <hr> <!-- 分隔线 -->
+                <div class="section-title"> 待办事项</div>
+                <!-- 待办事项列表及添加按钮 -->
+                <!-- 新的加号按钮 -->
+                <button class="btn add-todo-btn" @click="openTodoForm"><i class="fa fa-plus"></i></button>
+
+                <!-- 待办事项列表 -->
+                <ul class="todo-list">
+                    <li v-for="(todo, index) in todos" :key="index" @click="toggleTodoComplete(todo)" :class="{ 'completed': todo.completed, 'fade-out': todo.isDeleting }">
+                        <span class="todo-circle" :class="{ 'completed': todo.completed }"></span> <!-- 小圆点 -->
+                        <span class="todo-text">{{ todo.text }}</span>
+                        <button class="icon-btn" title="删除" @click.stop="deleteTodo(todo)"><i class="fa fa-trash"></i></button>
+                    </li>
+                    <li v-if="todos.length === 0" class="no-todos-message"> 暂无待办事项</li>
+                </ul>
+                <hr> <!-- 分隔线 -->
+                <div class="section-title"> 设置 / 帮助</div>
+                <!-- 设置/帮助按钮 -->
+                <button class="btn secondary" @click="handleSidebarButtonClick('设置')"> 设置</button>
+                <button class="btn secondary" @click="handleSidebarButtonClick('帮助')"> 帮助</button>
+                <!-- 退出登录按钮已移到导航栏 -->
+            </div>
+
+            <!-- 右侧主内容区 -->
+            <!-- 主内容区包含学习目标卡片、表单弹窗、笔记导入弹窗等 -->
+            <div class="main">
+                <div class="main-title"><i class="fa fa-flag"></i> 学习目标</div>
+                <!-- 新建/编辑学习目标表单浮窗 -->
+                <div class="modal-overlay" v-if="showForm">
+                    <div class="modal-content">
+                        <button class="modal-close-btn" @click="cancelForm">×</button>
+                        <div class="target-form">
+                            <h3 class="form-title">{{ formMode === 'add' ? '新建学习目标' : '编辑学习目标' }}</h3>
+                            <div class="form-group">
+                                <label for="formTargetId">目标名:</label>
+                                <input type="text" id="formTargetId" v-model="currentFormTarget.target_id" placeholder="例如：算法与数据结构">
+                            </div>
+                            <div class="form-group">
+                                <label for="formTags">标签 (英文逗号分隔):</label>
+                                <input type="text" id="formTags" v-model="currentFormTarget.tags" placeholder="例如：算法, CS基础">
+                            </div>
+                            <!-- 进度输入已移除，保存时进度默认为0，由后端/roadmap同步 -->
+                            <div class="form-actions">
+                                <button class="btn" @click="saveForm"> 保存</button>
+                                <button class="btn secondary" @click="cancelForm"> 取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新增：待办事项浮窗表单 -->
+                <div class="todo-modal-overlay" v-if="showTodoAddForm">
+                    <div class="todo-modal-content">
+                        <button class="modal-close-btn" @click="cancelAddTodoForm">×</button>
+                        <div class="todo-form">
+                            <h3 class="todo-form-title">添加待办事项</h3>
+                            <div class="form-group">
+                                <label for="todoText">事项内容:</label>
+                                <input type="text" id="todoText" v-model="newTodoText" @keyup.enter="addTodoFromForm" placeholder="例如：完成软件工程作业">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn" @click="addTodoFromForm"> 添加</button>
+                                <button class="btn secondary" @click="cancelAddTodoForm"> 取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新建笔记浮窗 -->
+                <div class="modal-overlay" v-if="showNoteForm">
+                    <div class="modal-content">
+                        <button class="modal-close-btn" @click="closeNoteForm">×</button>
+                        <div class="target-form">
+                            <h3 class="form-title">新建笔记</h3>
+                            <div class="form-group">
+                                <label>选择学习目标:</label>
+                                <select v-model="noteForm.targetId" @change="onNoteTargetChange" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="t in targets" :value="t.id">{{ t.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" v-if="noteRoadmapMainNodes.length">
+                                <label>选择主节点:</label>
+                                <select v-model="noteForm.mainId" @change="onNoteMainChange" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="n in noteRoadmapMainNodes" :value="n.id">{{ n.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" v-if="noteRoadmapBranchNodes.length">
+                                <label>选择分支节点:</label>
+                                <select v-model="noteForm.branchId" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="b in noteRoadmapBranchNodes" :value="b.id">{{ b.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>笔记标题:</label>
+                                <input type="text" v-model="noteForm.title" placeholder="请输入笔记标题" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                            </div>
+                            <div class="form-group">
+                                <label>笔记内容:</label>
+                                <textarea v-model="noteForm.content" rows="6" placeholder="请输入笔记内容" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn" @click="saveNote"> 保存</button>
+                                <button class="btn secondary" @click="closeNoteForm"> 取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导入md文件浮窗 -->
+                <div class="modal-overlay" v-if="showImportForm">
+                    <div class="modal-content">
+                        <button class="modal-close-btn" @click="closeImportForm">×</button>
+                        <div class="target-form">
+                            <h3 class="form-title">导入本地md文件</h3>
+                            <div class="form-group">
+                                <label>选择学习目标:</label>
+                                <select v-model="importForm.targetId" @change="onImportTargetChange" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="t in targets" :value="t.id">{{ t.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" v-if="importRoadmapMainNodes.length">
+                                <label>选择主节点:</label>
+                                <select v-model="importForm.mainId" @change="onImportMainChange" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="n in importRoadmapMainNodes" :value="n.id">{{ n.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" v-if="importRoadmapBranchNodes.length">
+                                <label>选择分支节点:</label>
+                                <select v-model="importForm.branchId" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                                    <option value="" disabled>请选择</option>
+                                    <option v-for="b in importRoadmapBranchNodes" :value="b.id">{{ b.title }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>选择md文件:</label>
+                                <input type="file" accept=".md" @change="onImportFileChange" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                            </div>
+                            <div class="form-group">
+                                <label>标题:</label>
+                                <input type="text" v-model="importForm.title" placeholder="请输入标题" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;">
+                            </div>
+                            <div class="form-group">
+                                <label>内容预览:</label>
+                                <textarea v-model="importForm.content" rows="6" placeholder="内容" readonly style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--main-border);background:#f8fafc;color:var(--main-text);font-size:1em;"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn" @click="saveImport"> 导入</button>
+                                <button class="btn secondary" @click="closeImportForm"> 取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习目标卡片列表容器（两列布局） -->
+                <div class="card-list"> <!-- 当表单显示时不再隐藏卡片列表，因为表单是浮窗 -->
+                    <!-- 条件渲染：如果filteredTargets数组有内容则显示卡片，否则显示"未找到"提示 -->
+                    <template v-if="filteredTargets.length > 0">
+                        <div class="card" v-for="target in sortedTargets" :key="target.id" @click="viewTarget(target)">
+                            <div class="card-title" v-html="highlight(target.title)"></div>
+                            <div class="card-progress-bg">
+                                <div class="card-progress" :style="{ width: (target.progress * 100) + '%' }"></div>
+                            </div>
+                            <div class="card-tags">
+                                <span class="card-tag" v-for="tag in target.tags" :key="tag" v-html="highlight(tag)"></span>
+                            </div>
+                            <div class="card-update"><i class="fa fa-clock-o"></i> 最近更新: {{ target.update }}</div>
+                            <!-- 卡片底部操作按钮区域 -->
+                            <div class="card-footer">
+                                <button class="icon-btn" title="预览"><i class="fa fa-eye"></i></button>
+                                <button class="icon-btn" title="编辑" @click.stop="openForm('edit', target)"><i class="fa fa-pencil"></i></button>
+                                <button class="icon-btn" :class="{favorited: target.favorite}" title="收藏" @click.stop="toggleFavorite(target)"><i class="fa" :class="target.favorite ? 'fa-star' : 'fa-star-o'"></i></button>
+                                <button class="icon-btn" title="删除" @click.stop="deleteTarget(target.id)"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                    <!-- 如果没有匹配的学习目标，则显示此提示 -->
+                    <div v-else style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:1.1em; padding:40px 0;">
+                        未找到相关学习目标
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue.js 脚本区域 -->
+    <script>
+        // 主Vue应用，负责主界面所有交互逻辑
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    // 搜索框内容
+                    search: '',
+                    // 学习目标表单弹窗控制
+                    showForm: false,
+                    formMode: 'add',
+                    currentFormTarget: null,
+                    // 登录状态
+                    isLoggedIn: false,
+                    loggedInUsername: '',
+                    // 用户信息
+                    user: {
+                        avatar: 'https://static.streamlit.io/examples/cat.jpg',
+                    },
+                    // 学习目标列表
+                    targets: [],
+                    // 待办事项相关
+                    newTodoText: '',
+                    todos: [],
+                    showTodoAddForm: false,
+                    // Roadmap/笔记搜索相关
+                    roadmapSearchResults: [],
+                    showRoadmapDropdown: false,
+                    isSearchingRoadmap: false,
+                    mdSearchResults: [], // md搜索结果
+                    favorites: [], // 收藏id列表
+                    // 新建笔记/导入笔记弹窗相关
+                    showNoteForm: false,
+                    noteForm: { title: '', content: '', targetId: '', mainId: '', branchId: '' },
+                    noteRoadmapMainNodes: [],
+                    noteRoadmapBranchNodes: [],
+                    showImportForm: false,
+                    importForm: { targetId: '', mainId: '', branchId: '', title: '', content: '' },
+                    importRoadmapMainNodes: [],
+                    importRoadmapBranchNodes: [],
+                }
+            },
+            mounted() {
+                // 检查本地登录状态
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) {
+                    window.location.href = 'signin_page.html';
+                    return;
+                }
+                // 检查后端 session 是否有效
+                fetch('http://localhost:5000/check_login', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            // session 失效，跳转回登录页
+                            localStorage.removeItem('currentUser');
+                            window.location.href = 'signin_page.html';
+                        } else {
+                            // session 有效，正常加载页面
+                            this.isLoggedIn = true;
+                            this.loggedInUsername = currentUser.username;
+                            this.fetchTargets();
+                            this.fetchTodos();
+                        }
+                    });
+                // 始终从localStorage读取头像
+                const savedAvatar = localStorage.getItem('user_avatar');
+                if (savedAvatar) this.user.avatar = savedAvatar;
+                this.loadFavorites();
+
+                // 监听窗口resize，实时调整下拉框位置
+                window.addEventListener('resize', this.updateDropdownPosition);
+                this.navHeader = document.querySelector('.nav-header');
+            },
+            computed: {
+                filteredTargets() {
+                    if (!this.search) return this.targets;
+                    const s = this.search.trim().toLowerCase();
+                    return this.targets.filter(t =>
+                        t.title.toLowerCase().includes(s) ||
+                        t.tags.some(tag => tag.toLowerCase().includes(s))
+                    );
+                },
+                sortedTargets() {
+                    // 收藏的目标提前
+                    return [
+                        ...this.filteredTargets.filter(t => t.favorite),
+                        ...this.filteredTargets.filter(t => !t.favorite)
+                    ];
+                }
+            },
+            methods: {
+                // ========== 主要数据获取与操作方法 ==========
+                /**
+                 * 获取当前用户所有学习目标
+                 */
+                async fetchTargets() {
+                    const res = await fetch('http://localhost:5000/targets', { credentials: 'include' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.targets = (Array.isArray(data) ? data : []).map(t => ({
+                            ...t,
+                            id: String(t.id),
+                            tags: Array.isArray(t.tags) ? t.tags : (typeof t.tags === 'string' && t.tags ? JSON.parse(t.tags) : []),
+                            progress: 0 // 先设为0，后面查
+                        }));
+                        // 并发获取每个目标的 roadmap 进度
+                        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                        await Promise.all(this.targets.map(async (t) => {
+                            try {
+                                const resp = await fetch(`http://localhost:5000/api/roadmap_progress?user_id=${encodeURIComponent(currentUser.username)}&target_id=${encodeURIComponent(t.id)}`);
+                                if (resp.ok) {
+                                    const result = await resp.json();
+                                    if (result.success) t.progress = result.progress;
+                                }
+                            } catch {}
+                        }));
+                    } else {
+                        this.targets = [];
+                    }
+                    this.loadFavorites();
+                },
+                /**
+                 * 获取当前用户所有待办事项
+                 */
+                async fetchTodos() {
+                    const res = await fetch('http://localhost:5000/todos', { credentials: 'include' });
+                    if (res.ok) {
+                        const result = await res.json();
+                        if (result.success) {
+                            this.todos = result.data.map(todo => ({ ...todo, isDeleting: false }));
+                        } else {
+                            this.todos = [];
+                        }
+                    } else {
+                        this.todos = [];
+                    }
+                },
+                /**
+                 * 高亮搜索关键词
+                 */
+                highlight(text) {
+                    if (!this.search) return text;
+                    const s = this.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const reg = new RegExp(s, 'gi');
+                    return text.replace(reg, match => `<span style="background:#6b4eff;color:#fff;border-radius:4px;padding:0 2px;">${match}</span>`);
+                },
+                performSearch() {},
+                viewTarget(target) {
+                    sessionStorage.setItem('roadmap_target_id', target.id);
+                    sessionStorage.setItem('roadmap_target_title', target.title);
+                    sessionStorage.setItem('roadmap_user_id', this.loggedInUsername);
+                    window.location.href = 'roadmap_page.html';
+                },
+                handleSidebarButtonClick(action) {
+                    if (action === '导入/导出') {
+                        this.openImportForm();
+                    } else if (action === '帮助') {
+                        window.location.href = 'help.html';
+                    } else if (action === '设置') {
+                        window.location.href = 'profile.html';
+                    } else {
+                        window.location.href = 'test_page.html?action=' + encodeURIComponent(action);
+                    }
+                },
+                openForm(mode, target = null) {
+                    this.formMode = mode;
+                    if (mode === 'add') {
+                        this.currentFormTarget = { target_id: '', tags: '', progress: 0 };
+                    } else if (mode === 'edit' && target) {
+                        // 目标名和标签都显示原内容
+                        this.currentFormTarget = {
+                            id: target.id,
+                            target_id: target.title, // 目标名显示为原内容
+                            tags: Array.isArray(target.tags) ? target.tags.join(', ') : target.tags, // 标签显示为原内容
+                            originalId: target.id
+                        };
+                    }
+                    this.showForm = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                /**
+                 * 新建/编辑学习目标表单保存
+                 */
+                async saveForm() {
+                    if (!this.currentFormTarget.target_id.trim()) {
+                        alert('目标名不能为空！');
+                        return;
+                    }
+                    const payload = {
+                        title: this.currentFormTarget.target_id.trim(),
+                        progress: 0, // 新建时进度始终为0
+                        tags: this.currentFormTarget.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+                    };
+                    if (this.formMode === 'add') {
+                        await fetch('http://localhost:5000/targets', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        const id = this.currentFormTarget.id || this.currentFormTarget.originalId;
+                        await fetch(`http://localhost:5000/targets/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    this.showForm = false;
+                    this.currentFormTarget = null;
+                    document.body.style.overflow = '';
+                    await this.fetchTargets();
+                    this.saveFavorites(); // 保存收藏
+                },
+                cancelForm() {
+                    this.showForm = false;
+                    this.currentFormTarget = null;
+                    document.body.style.overflow = '';
+                },
+                async deleteTarget(id) {
+                    if (!confirm('确定要删除该学习目标吗？')) return;
+                    await fetch(`http://localhost:5000/targets/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    await this.fetchTargets();
+                    this.saveFavorites(); // 保存收藏
+                },
+                attemptLogout() {
+                    if (confirm('确定要退出登录吗？')) {
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'signin_page.html';
+                    }
+                },
+                addTodoFromForm() {
+                    if (!this.newTodoText.trim()) {
+                        alert('待办事项不能为空！');
+                        return;
+                    }
+                    this.addTodoApi(this.newTodoText.trim());
+                },
+                async addTodoApi(text) {
+                    await fetch('http://localhost:5000/todos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ text })
+                    });
+                    this.newTodoText = '';
+                    this.showTodoAddForm = false;
+                    await this.fetchTodos();
+                },
+                async toggleTodoComplete(todo) {
+                    if (!todo.completed) {
+                        await fetch(`http://localhost:5000/todos/${todo.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ completed: true })
+                        });
+                        todo.isDeleting = true;
+                        setTimeout(async () => {
+                            await this.fetchTodos();
+                        }, 500);
+                    } else {
+                        await fetch(`http://localhost:5000/todos/${todo.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ completed: false })
+                        });
+                        await this.fetchTodos();
+                    }
+                },
+                async deleteTodo(todo) {
+                    await fetch(`http://localhost:5000/todos/${todo.id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    await this.fetchTodos();
+                },
+                openTodoForm() {
+                    this.newTodoText = '';
+                    this.showTodoAddForm = true;
+                },
+                cancelAddTodoForm() {
+                    this.showTodoAddForm = false;
+                    this.newTodoText = '';
+                },
+                // 新增：roadmap节点搜索
+                async searchRoadmapNodes() {
+                    if (!this.search.trim()) {
+                        this.roadmapSearchResults = [];
+                        this.mdSearchResults = [];
+                        this.showRoadmapDropdown = false;
+                        return;
+                    }
+                    this.isSearchingRoadmap = true;
+                    try {
+                        // roadmap节点搜索
+                        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                        let roadmapData = [];
+                        if (currentUser && currentUser.username) {
+                            const roadmapRes = await fetch(`http://localhost:5000/roadmap/search?q=${encodeURIComponent(this.search)}&user_id=${encodeURIComponent(currentUser.username)}`, {
+                                credentials: 'include'
+                            });
+                            if (roadmapRes.ok) {
+                                const result = await roadmapRes.json();
+                                if (result.success) roadmapData = result.data;
+                            }
+                        }
+                        // md文件搜索
+                        let mdData = [];
+                        if (currentUser && currentUser.username) {
+                            const mdRes = await fetch(`http://localhost:5000/api/files/search?user_id=${encodeURIComponent(currentUser.username)}&q=${encodeURIComponent(this.search)}`);
+                            if (mdRes.ok) {
+                                const mdResult = await mdRes.json();
+                                if (mdResult.success) mdData = mdResult.data;
+                            }
+                        }
+                        this.roadmapSearchResults = roadmapData;
+                        this.mdSearchResults = mdData;
+                        this.showRoadmapDropdown = true;
+                        this.updateDropdownPosition();
+                    } finally {
+                        this.isSearchingRoadmap = false;
+                    }
+                },
+                closeRoadmapDropdown() {
+                    setTimeout(() => {
+                        this.showRoadmapDropdown = false;
+                        // 隐藏时重置下拉框位置
+                        const dropdown = document.querySelector('.roadmap-dropdown');
+                        if (dropdown) {
+                            dropdown.style.left = '';
+                            dropdown.style.top = '';
+                            dropdown.style.width = '';
+                        }
+                    }, 200);
+                },
+                handleRoadmapResultClick(node) {
+                    // 查找目标名
+                    const target = this.targets.find(t => String(t.id) === String(node.target_id));
+                    const title = target ? target.title : '未命名目标';
+                    sessionStorage.setItem('roadmap_target_id', node.target_id);
+                    sessionStorage.setItem('roadmap_target_title', title);
+                    sessionStorage.setItem('roadmap_user_id', this.loggedInUsername);
+                    // 通过URL参数传递高亮节点信息
+                    const url = `roadmap_page.html?highlight_id=${encodeURIComponent(node.id)}&highlight_type=${encodeURIComponent(node.node_type)}&target_id=${encodeURIComponent(node.target_id)}`;
+                    window.location.href = url;
+                    this.showRoadmapDropdown = false;
+                },
+                handleMdResultClick(file) {
+                    // 跳转到index_md.html并传递必要信息
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                    sessionStorage.setItem('md_user_id', currentUser.username);
+                    if (file.tags) {
+                        try {
+                            const tags = JSON.parse(file.tags);
+                            sessionStorage.setItem('md_target_id', tags.targetId || '');
+                            sessionStorage.setItem('md_main_id', tags.mainId || '');
+                            if (tags.branchId) {
+                                sessionStorage.setItem('md_type', 'branch');
+                                sessionStorage.setItem('md_branch_id', tags.branchId);
+                            } else {
+                                sessionStorage.setItem('md_type', 'main');
+                                sessionStorage.removeItem('md_branch_id');
+                            }
+                        } catch {}
+                    }
+                    window.location.href = 'index_md.html';
+                    this.showRoadmapDropdown = false;
+                },
+                triggerAvatarUpload() {
+                    this.$refs.avatarInput.click();
+                },
+                onAvatarChange(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        this.user.avatar = ev.target.result;
+                        localStorage.setItem('user_avatar', ev.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                },
+                toggleFavorite(target) {
+                    target.favorite = !target.favorite;
+                    this.saveFavorites();
+                },
+                saveFavorites() {
+                    const favs = this.targets.filter(t => t.favorite).map(t => String(t.id));
+                    localStorage.setItem('favorites', JSON.stringify(favs));
+                    this.favorites = favs;
+                },
+                loadFavorites() {
+                    const favs = JSON.parse(localStorage.getItem('favorites') || '[]').map(String);
+                    this.favorites = favs;
+                    this.targets.forEach(t => t.favorite = favs.includes(String(t.id)));
+                },
+                openNoteForm() {
+                    this.showNoteForm = true;
+                    this.noteForm = { title: '', content: '', targetId: '', mainId: '', branchId: '' };
+                    this.noteRoadmapMainNodes = [];
+                    this.noteRoadmapBranchNodes = [];
+                    document.body.style.overflow = 'hidden';
+                },
+                closeNoteForm() {
+                    this.showNoteForm = false;
+                    document.body.style.overflow = '';
+                },
+                onNoteTargetChange() {
+                    this.noteForm.mainId = '';
+                    this.noteForm.branchId = '';
+                    this.noteRoadmapMainNodes = [];
+                    this.noteRoadmapBranchNodes = [];
+                    if (!this.noteForm.targetId) return;
+                    // 获取主节点
+                    fetch(`http://localhost:5000/roadmap/get_main_nodes?target_id=${encodeURIComponent(this.noteForm.targetId)}`, { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) this.noteRoadmapMainNodes = data.data;
+                        });
+                },
+                onNoteMainChange() {
+                    this.noteForm.branchId = '';
+                    this.noteRoadmapBranchNodes = [];
+                    if (!this.noteForm.mainId) return;
+                    // 获取分支节点
+                    fetch(`http://localhost:5000/roadmap/get_branch_nodes?main_id=${encodeURIComponent(this.noteForm.mainId)}`, { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) this.noteRoadmapBranchNodes = data.data;
+                        });
+                },
+                saveNote() {
+                    if (!this.noteForm.title.trim()) {
+                        alert('笔记标题不能为空！');
+                        return;
+                    }
+                    if (!this.noteForm.targetId || !this.noteForm.mainId) {
+                        alert('请选择学习目标和主节点！');
+                        return;
+                    }
+                    if (!this.noteForm.branchId) {
+                        alert('请选择分支节点！');
+                        return;
+                    }
+                    const tags = JSON.stringify({
+                        userId: this.loggedInUsername,
+                        targetId: String(this.noteForm.targetId),
+                        mainId: String(this.noteForm.mainId),
+                        branchId: String(this.noteForm.branchId)
+                    });
+                    console.log('[新建笔记] tags:', tags);
+                    fetch('http://localhost:5000/api/files', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            name: this.noteForm.title,
+                            content: this.noteForm.content,
+                            tags,
+                            user_id: this.loggedInUsername
+                        })
+                    }).then(res => res.json()).then(data => {
+                        console.log('[新建笔记] 后端返回:', data);
+                        if (data.success) {
+                            alert('笔记创建成功！');
+                            this.closeNoteForm();
+                        } else {
+                            alert('创建失败：' + (data.error || '未知错误'));
+                        }
+                    });
+                },
+                openImportForm() {
+                    this.showImportForm = true;
+                    this.importForm = { targetId: '', mainId: '', branchId: '', title: '', content: '' };
+                    this.importRoadmapMainNodes = [];
+                    this.importRoadmapBranchNodes = [];
+                    document.body.style.overflow = 'hidden';
+                },
+                closeImportForm() {
+                    this.showImportForm = false;
+                    document.body.style.overflow = '';
+                },
+                onImportTargetChange() {
+                    this.importForm.mainId = '';
+                    this.importForm.branchId = '';
+                    this.importRoadmapMainNodes = [];
+                    this.importRoadmapBranchNodes = [];
+                    if (!this.importForm.targetId) return;
+                    fetch(`http://localhost:5000/roadmap/get_main_nodes?target_id=${encodeURIComponent(this.importForm.targetId)}`, { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) this.importRoadmapMainNodes = data.data;
+                        });
+                },
+                onImportMainChange() {
+                    this.importForm.branchId = '';
+                    this.importRoadmapBranchNodes = [];
+                    if (!this.importForm.mainId) return;
+                    fetch(`http://localhost:5000/roadmap/get_branch_nodes?main_id=${encodeURIComponent(this.importForm.mainId)}`, { credentials: 'include' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) this.importRoadmapBranchNodes = data.data;
+                        });
+                },
+                onImportFileChange(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        this.importForm.content = ev.target.result;
+                        this.importForm.title = file.name.replace(/\.md$/i, '');
+                    };
+                    reader.readAsText(file, 'utf-8');
+                },
+                saveImport() {
+                    if (!this.importForm.title.trim()) {
+                        alert('标题不能为空！');
+                        return;
+                    }
+                    if (!this.importForm.targetId || !this.importForm.mainId || !this.importForm.branchId) {
+                        alert('请选择目标、主节点和分支节点！');
+                        return;
+                    }
+                    const tags = JSON.stringify({
+                        userId: this.loggedInUsername,
+                        targetId: String(this.importForm.targetId),
+                        mainId: String(this.importForm.mainId),
+                        branchId: String(this.importForm.branchId)
+                    });
+                    fetch('http://localhost:5000/api/files', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            name: this.importForm.title,
+                            content: this.importForm.content,
+                            tags,
+                            user_id: this.loggedInUsername
+                        })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) {
+                            alert('导入成功！');
+                            this.closeImportForm();
+                        } else {
+                            alert('导入失败：' + (data.error || '未知错误'));
+                        }
+                    });
+                },
+                getTargetTitleById(id) {
+                    const t = this.targets.find(t => String(t.id) === String(id));
+                    return t ? t.title : id;
+                },
+                /**
+                 * 动态设置下拉框fixed定位，保证其浮在最上方且与输入框对齐
+                 */
+                updateDropdownPosition() {
+                    this.$nextTick(() => {
+                        const input = document.querySelector('.nav-search input');
+                        const dropdown = document.querySelector('.roadmap-dropdown');
+                        if (!input || !dropdown || !this.showRoadmapDropdown) return;
+                        const rect = input.getBoundingClientRect();
+                        dropdown.style.position = 'fixed';
+                        dropdown.style.left = rect.left + 'px';
+                        dropdown.style.top = (rect.bottom) + 'px';
+                        dropdown.style.width = rect.width + 'px';
+                        dropdown.style.zIndex = 3000;
+                    });
+                },
+                toggleNavHeader() {
+                    if (!this.navHeader) return;
+                    if (this.showForm || this.showNoteForm || this.showImportForm || this.showTodoAddForm) {
+                        this.navHeader.classList.add('hide-when-modal');
+                    } else {
+                        this.navHeader.classList.remove('hide-when-modal');
+                    }
+                },
+            },
+            watch: {
+                showForm(val) { this.toggleNavHeader(); },
+                showNoteForm(val) { this.toggleNavHeader(); },
+                showImportForm(val) { this.toggleNavHeader(); },
+                showTodoAddForm(val) { this.toggleNavHeader(); },
+            },
+        }).mount("#app");
+    </script>
+</body>
+</html>

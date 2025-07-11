@@ -1,0 +1,124 @@
+<!--
+  文件名：help.html
+  作用：LevelUP 帮助页面，提供使用指南和常见问题说明
+  主要内容：
+    - 新建学习目标说明
+    - Roadmap使用说明
+    - 常见问题解答
+    - 返回主页面按钮
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>LevelUP 帮助 - 使用指南</title>
+    <link rel="stylesheet" href="css.css">
+    <style>
+        :root {
+            --main-bg: #fff;
+            --main-text: #222;
+            --main-purple: #6b4eff;
+            --main-blue: #9cd6ff;
+            --main-border: #e6eaf0;
+            --main-gray: #888;
+        }
+        body {
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            margin: 0;
+            background: var(--main-bg);
+            color: var(--main-text);
+        }
+        .help-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: var(--main-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(107, 78, 255, 0.08);
+            padding: 40px 32px 32px 32px;
+            font-size: 1.1em;
+        }
+        .help-title {
+            color: var(--main-purple);
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 24px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .help-section {
+            margin-bottom: 32px;
+        }
+        .help-section h2 {
+            color: var(--main-purple);
+            font-size: 1.3em;
+            margin-bottom: 12px;
+        }
+        .help-section ul {
+            margin-left: 1.5em;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 24px;
+            padding: 10px 24px;
+            background: var(--main-purple);
+            color: var(--main-bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.2s, color 0.2s;
+        }
+        .back-btn:hover {
+            background: var(--main-blue);
+            color: var(--main-purple);
+            text-decoration: none;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid var(--main-border);
+            margin: 24px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <!-- 返回主页面按钮 -->
+        <a href="main_web.html" class="back-btn">返回</a>
+        <div class="help-title">LevelUP 使用指南</div>
+        <hr style="border:none;border-top:2px solid #eee;margin:24px 0;">
+        <!-- 新建学习目标说明区块 -->
+        <div class="help-section" style="background:#f8faff;border-radius:10px;padding:24px 20px 18px 20px;box-shadow:0 2px 8px #f0f4ff;">
+            <h2><span style="font-size:1.3em;vertical-align:middle;">🆕</span> 一、如何新建学习目标</h2>
+            <ul>
+                <li><span style="color:#6b4eff;font-weight:bold;">在主页面左侧栏点击“新建学习目标”按钮</span></li>
+                <li>填写目标名称、标签（可选）、进度（可选）等信息。</li>
+                <li>点击“<span style='color:#6b4eff;font-weight:bold;'>保存</span>”即可创建新的学习目标。</li>
+                <li>新建后，目标会显示在目标列表中，<span style="color:#6b4eff;font-weight:bold;">点击</span>即可进入详细学习路径(Roadmap)页面。</li>
+            </ul>
+        </div>
+        <hr style="border:none;border-top:2px dashed #e6eaf0;margin:32px 0 24px 0;">
+        <!-- Roadmap使用说明区块 -->
+        <div class="help-section" style="background:#f6f7fb;border-radius:10px;padding:24px 20px 18px 20px;box-shadow:0 2px 8px #f0f4ff;">
+            <h2><span style="font-size:1.3em;vertical-align:middle;">🗺️</span> 二、如何使用roadmap</h2>
+            <ul>
+                <li>进入学习目标后，roadmap显示，新建学习目标会自动生成第一个主节点。</li>
+                <li><span style="color:#6b4eff;font-weight:bold;">右键结点</span>可进行操作选择，包括添加子技能点（向右）或下一主技能点（向下）、删除技能点、编辑技能、学习状况修改。</li>
+                <li><span style="color:#6b4eff;font-weight:bold;">双击技能点</span>可进入笔记页面，进行笔记的编辑和查看。</li>
+            </ul>
+        </div>
+        <hr style="border:none;border-top:2px solid #eee;margin:32px 0 24px 0;">
+        <!-- 常见问题区块 -->
+        <div class="help-section" style="background:#f8faff;border-radius:10px;padding:24px 20px 18px 20px;box-shadow:0 2px 8px #f0f4ff;">
+            <h2><span style="font-size:1.2em;vertical-align:middle;">❓</span> 三、常见问题</h2>
+            <ul>
+                <li>如遇到页面异常或数据丢失，请尝试刷新页面或重新登录。</li>
+                <li>如有更多问题或建议，请联系开发团队。</li>
+                <li style="color:#888;font-size:0.98em;">LevelUP 的诞生源于sysu软件工程课程的作业，旨在为用户提供学习目标和学习路径的规划和记录，并提供笔记功能，方便用户记录学习内容。若使用时给您造成不便，请见谅！</li>
+            </ul>
+        </div>
+        <div style="text-align:center;color:#888;font-size:0.95em;margin-top:32px;">LevelUP 团队 &copy; 2025</div>
+    </div>
+</body>
+</html> 

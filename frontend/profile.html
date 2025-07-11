@@ -1,0 +1,163 @@
+<!--
+  文件名：profile.html
+  作用：LevelUP 个人信息修改页面
+  主要功能：
+    - 修改用户名
+    - 修改密码
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>LevelUP - 个人信息设置</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Roboto', 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; }
+        .container { max-width: 420px; margin: 60px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px #6b4eff22; padding: 36px 32px; }
+        h2 { color: #6b4eff; text-align: center; margin-bottom: 32px; }
+        .form-group { margin-bottom: 22px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #222; }
+        input { width: 100%; padding: 10px; border: 1.5px solid #e6eaf0; border-radius: 8px; font-size: 1.1em; background: #f8fafc; }
+        .btn { width: 100%; padding: 12px 0; font-size: 1.1em; font-weight: bold; border: none; border-radius: 8px; background: #6b4eff; color: #fff; cursor: pointer; margin-top: 8px; }
+        .btn:hover { background: #9cd6ff; color: #6b4eff; }
+        .section-title { color: #52c41a; font-size: 1.1em; margin: 24px 0 10px 0; font-weight: bold; }
+        .error-message { color: #ff4444; margin-top: 8px; font-size: 0.98em; }
+        .success-message { color: #52c41a; margin-top: 8px; font-size: 0.98em; }
+        .back-link { display: block; text-align: center; margin-top: 24px; color: #6b4eff; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="container">
+        <h2>个人信息设置</h2>
+        <div>
+            <div class="section-title">修改用户名</div>
+            <div class="form-group">
+                <label>当前用户名：</label>
+                <div style="padding:8px 0 0 2px;color:#888;">{{ currentUsername }}</div>
+            </div>
+            <div class="form-group">
+                <label for="newUsername">新用户名：</label>
+                <input type="text" id="newUsername" v-model="newUsername" placeholder="请输入新用户名">
+            </div>
+            <button class="btn" @click="updateUsername">保存用户名</button>
+            <div v-if="usernameMsg" :class="{'error-message': !usernameSuccess, 'success-message': usernameSuccess}">{{ usernameMsg }}</div>
+        </div>
+        <div>
+            <div class="section-title">修改密码</div>
+            <div class="form-group">
+                <label for="oldPassword">原密码：</label>
+                <input type="password" id="oldPassword" v-model="oldPassword" placeholder="请输入原密码">
+            </div>
+            <div class="form-group">
+                <label for="newPassword">新密码：</label>
+                <input type="password" id="newPassword" v-model="newPassword" placeholder="请输入新密码">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">确认新密码：</label>
+                <input type="password" id="confirmPassword" v-model="confirmPassword" placeholder="请再次输入新密码">
+            </div>
+            <button class="btn" @click="updatePassword">保存密码</button>
+            <div v-if="passwordMsg" :class="{'error-message': !passwordSuccess, 'success-message': passwordSuccess}">{{ passwordMsg }}</div>
+        </div>
+        <a href="main_web.html" class="back-link">返回主界面</a>
+    </div>
+</div>
+<script>
+const { createApp } = Vue;
+createApp({
+    data() {
+        return {
+            currentUsername: '',
+            newUsername: '',
+            usernameMsg: '',
+            usernameSuccess: false,
+            oldPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+            passwordMsg: '',
+            passwordSuccess: false
+        }
+    },
+    mounted() {
+        // 读取当前用户名
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (user && user.username) {
+            this.currentUsername = user.username;
+        }
+    },
+    methods: {
+        async updateUsername() {
+            this.usernameMsg = '';
+            this.usernameSuccess = false;
+            if (!this.newUsername.trim()) {
+                this.usernameMsg = '新用户名不能为空！';
+                return;
+            }
+            if (this.newUsername === this.currentUsername) {
+                this.usernameMsg = '新用户名不能与当前用户名相同！';
+                return;
+            }
+            try {
+                const res = await fetch('http://localhost:5000/api/user/username', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ new_username: this.newUsername })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.usernameMsg = '用户名修改成功！';
+                    this.usernameSuccess = true;
+                    this.currentUsername = this.newUsername;
+                    // 同步localStorage
+                    localStorage.setItem('currentUser', JSON.stringify({ username: this.newUsername }));
+                } else {
+                    this.usernameMsg = data.error || '用户名修改失败！';
+                }
+            } catch (e) {
+                this.usernameMsg = '请求失败，请稍后重试！';
+            }
+        },
+        async updatePassword() {
+            this.passwordMsg = '';
+            this.passwordSuccess = false;
+            if (!this.oldPassword || !this.newPassword || !this.confirmPassword) {
+                this.passwordMsg = '所有密码字段均不能为空！';
+                return;
+            }
+            if (this.newPassword !== this.confirmPassword) {
+                this.passwordMsg = '两次输入的新密码不一致！';
+                return;
+            }
+            try {
+                const res = await fetch('http://localhost:5000/api/user/password', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        old_password: this.oldPassword,
+                        new_password: this.newPassword
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.passwordMsg = '密码修改成功！';
+                    this.passwordSuccess = true;
+                    this.oldPassword = '';
+                    this.newPassword = '';
+                    this.confirmPassword = '';
+                } else {
+                    this.passwordMsg = data.error || '密码修改失败！';
+                }
+            } catch (e) {
+                this.passwordMsg = '请求失败，请稍后重试！';
+            }
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
