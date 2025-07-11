@@ -106,7 +106,6 @@ def api_delete_main_node(node_id):
     参数：node_id, user_id, target_id
     返回：操作结果
     """
-    user_id = request.args.get('user_id')
     target_id = request.args.get('target_id', 'testtarget')
     delete_main_node(node_id, target_id)
     return jsonify({'success': True})
@@ -118,7 +117,6 @@ def api_delete_branch_node(node_id):
     参数：node_id, user_id, target_id
     返回：操作结果
     """
-    user_id = request.args.get('user_id')
     target_id = request.args.get('target_id', 'testtarget')
     delete_branch_node(node_id, target_id)
     return jsonify({'success': True})
