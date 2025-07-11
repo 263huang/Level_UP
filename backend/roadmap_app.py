@@ -6,10 +6,10 @@
     - Roadmap节点搜索接口
     - Roadmap节点列表接口
 """
-from flask import Flask, Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 import sqlite3
 from backend.services.roadmap_service import (
-    get_roadmap, add_main_node, add_branch_node,
+    get_roadmap, add_branch_node,
     update_main_node, update_branch_node, delete_main_node, delete_branch_node,
     search_roadmap_nodes  # 新增
 )
@@ -119,7 +119,6 @@ def api_delete_main_node(node_id):
     参数：node_id, user_id, target_id
     返回：操作结果
     """
-    user_id = request.args.get('user_id')
     target_id = request.args.get('target_id', 'testtarget')
     delete_main_node(node_id, target_id)
     return jsonify({'success': True})
@@ -131,7 +130,6 @@ def api_delete_branch_node(node_id):
     参数：node_id, user_id, target_id
     返回：操作结果
     """
-    user_id = request.args.get('user_id')
     target_id = request.args.get('target_id', 'testtarget')
     delete_branch_node(node_id, target_id)
     return jsonify({'success': True})
