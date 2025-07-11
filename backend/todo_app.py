@@ -5,7 +5,7 @@
     - 待办事项RESTful接口
 """
 from flask import Blueprint, request, jsonify, session
-from backend.services.todo_service import init_todo_db, get_todos, add_todo, update_todo, delete_todo
+from backend.services.todo_service import get_todos, add_todo, update_todo, delete_todo
 from backend.services.sign_in_service import update_username, update_password
 from dotenv import load_dotenv
 import os
